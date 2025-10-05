@@ -1,0 +1,92 @@
+/* Global styles shared across all pages */
+
+/* Titles */
+.title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 2rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 20px;
+  color: #ffffff; /* White */
+}
+
+/* Subtitles */
+.subtitle {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: 20px;
+  color: #ffffff; /* White */
+}
+
+/* Inputs */
+.input {
+  display: block;
+  width: calc(100% - 40px);
+  padding: 10px;
+  margin: 0 auto 12px auto;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Input focus state */
+.input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+/* Primary Buttons */
+.btn-primary {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(to right, #3b82f6, #06b6d4);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(to right, #2563eb, #0891b2);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+}
+
+/* Links */
+.link {
+  color: #3b82f6;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.link:hover {
+  color: #1d4ed8;
+}
+
+/* Centered text */
+.text-center {
+  text-align: center;
+}
+
+/* Card defaults (shared with Card.jsx component) */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+  max-width: 400px;
+  width: 100%;
+}
