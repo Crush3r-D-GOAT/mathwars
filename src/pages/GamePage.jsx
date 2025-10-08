@@ -14,9 +14,9 @@ export default function GamePage() {
   }, []);
 
   const games = [
-    { id: 1, name: "Math Agar", img: placeholder, route: "/math-agar" },
-    { id: 2, name: "2048", img: placeholder, route: "/2048" },
-    { id: 3, name: "Coming Soon", img: placeholder, route: "#" },
+    { id: 1, name: "2048", img: placeholder, route: "/2048" },
+    { id: 2, name: "Math Agar", img: placeholder, route: "/math-agar" },
+    { id: 3, name: "Arithmetic Blaster", img: placeholder, route: "/arithmetic-blaster" },
     { id: 4, name: "Coming Soon", img: placeholder, route: "#" },
   ];
 

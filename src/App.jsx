@@ -10,6 +10,7 @@ import GamePage from './pages/GamePage';
 import Game2048 from './pages/Game2048';
 import DiagnosticPage from './pages/DiagnosticPage';
 import SettingsPage from './pages/SettingsPage';
+import ArithmeticBlaster from './pages/ArithmeticBlaster';
 
 // Global CSS
 import './App.css';
@@ -94,6 +95,7 @@ const AppContent = () => {
         <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/login" state={{ from: '/settings' }} replace />} />
         <Route path="/diagnostic" element={user ? <DiagnosticPage /> : <Navigate to="/login" state={{ from: '/diagnostic' }} replace />} />
         <Route path="/2048" element={user ? <Game2048 /> : <Navigate to="/login" state={{ from: '/2048' }} replace />} />
+        <Route path="/arithmetic-blaster" element={user ? <ArithmeticBlaster /> : <Navigate to="/login" state={{ from: '/arithmetic-blaster' }} replace />} />
         
         {/* Catch-all route */}
         <Route path="*" element={<Navigate to={user ? "/game" : "/login"} replace />} />
