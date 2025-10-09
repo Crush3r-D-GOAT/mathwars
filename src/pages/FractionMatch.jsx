@@ -64,8 +64,8 @@ export default function FractionMatch() {
             const newRound = prevRound + 1;
 
             // Every 5 rounds, multiply speed by 3
-            if (newRound % 5 === 0) {
-                speedRef.current *= 3;
+            if (newRound % 10 === 0) {
+                speedRef.current *= 1.25;
             }
 
             return newRound;
