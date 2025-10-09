@@ -1,7 +1,7 @@
 // src/components/ArithmeticBlaster.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import "./ArithmeticBlaster.css";
+import "../styles/ArithmeticBlaster.css";
 
 export default function ArithmeticBlaster() {
   const [question, setQuestion] = useState({});

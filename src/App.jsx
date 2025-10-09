@@ -11,6 +11,7 @@ import Game2048 from './pages/Game2048';
 import DiagnosticPage from './pages/DiagnosticPage';
 import SettingsPage from './pages/SettingsPage';
 import ArithmeticBlaster from './pages/ArithmeticBlaster';
+import FractionMatch from './pages/FractionMatch';
 
 // Global CSS
 import './App.css';
@@ -96,6 +97,7 @@ const AppContent = () => {
         <Route path="/diagnostic" element={user ? <DiagnosticPage /> : <Navigate to="/login" state={{ from: '/diagnostic' }} replace />} />
         <Route path="/2048" element={user ? <Game2048 /> : <Navigate to="/login" state={{ from: '/2048' }} replace />} />
         <Route path="/arithmetic-blaster" element={user ? <ArithmeticBlaster /> : <Navigate to="/login" state={{ from: '/arithmetic-blaster' }} replace />} />
+        <Route path="/fraction-match" element={user ? <FractionMatch /> : <Navigate to="/login" state={{ from: '/fraction-match' }} replace />} />
         
         {/* Catch-all route */}
         <Route path="*" element={<Navigate to={user ? "/game" : "/login"} replace />} />
