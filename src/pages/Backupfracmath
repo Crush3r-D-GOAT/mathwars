@@ -19,8 +19,6 @@ export default function FractionMatch() {
   const livesRef = useRef(lives);
   const gameOverRef = useRef(gameOver);
 
-  const hasHitBottomRef = useRef(false);
-
   useEffect(() => { livesRef.current = lives; }, [lives]);
   useEffect(() => { gameOverRef.current = gameOver; }, [gameOver]);
 
@@ -45,7 +43,6 @@ export default function FractionMatch() {
   const getRandomAngle = () => 30 + Math.random() * 120;
 
   const startNewRound = (reset = false) => {
-    hasHitBottomRef.current = false;
     const newFraction = generateFraction();
     setTargetFraction(newFraction);
     setFeedback({ type: null, message: "" });
@@ -75,52 +72,44 @@ export default function FractionMatch() {
   
     cancelAnimationFrame(animationRef.current);
   
-    //const hasHitBottomRef = useRef(false); // add this near your other refs
+    const loop = () => {
+        setPos((prev) => {
+          let newX = prev.x + vxRef.current;
+          let newY = prev.y + vyRef.current;
+      
+          // Bounce off left/right walls
+          if (newX <= 5 || newX >= 95) {
+            vxRef.current *= -1;
+            newX = Math.min(Math.max(newX, 5), 95);
+          };
+          
+          // If it hits the bottom
+          if (newY >= 95) {
+            cancelAnimationFrame(animationRef.current);
+            console.log("in newy=90 loop");
+            if (livesRef.current <= 1) {
+              setGameOver(true);
+              setGameComplete(true);
+            }
+            else {
+              livesRef.current -= 1; // subtract **once**
+              setLives(livesRef.current);
+              console.log("Life lost");
+              setStreak(0);
+              // schedule next round
+              setTimeout(() => startNewRound(), 800);
+            }
+      
+            return { x: newX, y: 90 };
+          }
+      
+          return { x: newX, y: newY };
+        });
+      
+        if (!gameOverRef.current) animationRef.current = requestAnimationFrame(loop);
+    };
 
-const loop = () => {
-  setPos((prev) => {
-    let newX = prev.x + vxRef.current;
-    let newY = prev.y + vyRef.current;
-
-    // Bounce off left/right walls
-    if (newX <= 5 || newX >= 95) {
-      vxRef.current *= -1;
-      newX = Math.min(Math.max(newX, 5), 95);
-    }
-
-    // If it hits the bottom — only trigger once
-    if (newY >= 95 && !hasHitBottomRef.current) {
-      hasHitBottomRef.current = true; // 🔒 prevent re-entry
-      cancelAnimationFrame(animationRef.current);
-      console.log("in newY>=95 loop");
-
-      if (livesRef.current <= 1) {
-        setGameOver(true);
-        setGameComplete(true);
-      } else {
-        livesRef.current -= 1;
-        setLives(livesRef.current);
-        console.log("Life lost");
-        setStreak(0);
-
-        // schedule next round
-        setTimeout(() => {
-          hasHitBottomRef.current = false; // ✅ reset for next drop
-          startNewRound();
-        }, 800);
-      }
-
-      return { x: newX, y: 90 };
-    }
-
-    return { x: newX, y: newY };
-  });
-
-  if (!gameOverRef.current) animationRef.current = requestAnimationFrame(loop);
-};
-
-animationRef.current = requestAnimationFrame(loop);
-
+    animationRef.current = requestAnimationFrame(loop);
   };
   
   
@@ -130,7 +119,7 @@ animationRef.current = requestAnimationFrame(loop);
     startNewRound(true);
   }, []);
 
-  /*useEffect(() => {
+  useEffect(() => {
     let lastTime = performance.now();
 
     const loop = (time) => {
@@ -175,7 +164,7 @@ animationRef.current = requestAnimationFrame(loop);
 
     animationRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationRef.current);
-  }, []);*/
+  }, []);
 
   // Check if two fractions are equivalent
   const checkEquivalent = (input) => {
