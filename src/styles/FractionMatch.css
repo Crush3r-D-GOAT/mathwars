@@ -305,7 +305,6 @@
 .fm-final-score {
   font-size: 2.2rem;
   font-weight: bold;
-  color: var(--secondary-color);
   background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
   background-clip: text;
   -webkit-background-clip: text;

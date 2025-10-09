@@ -12,6 +12,8 @@ export default function FractionMatch() {
   const [userInput, setUserInput] = useState("");
   const [targetFraction, setTargetFraction] = useState({ numerator: 1, denominator: 2 });
   const [gameComplete, setGameComplete] = useState(false);
+  const [round, setRound] = useState(0);
+  const speedRef = useRef(0.45); // Tracks how many rounds have occurred
 
   const animationRef = useRef(null);
   const vxRef = useRef(0);
@@ -33,6 +35,7 @@ export default function FractionMatch() {
       denominator: denominator / divisor,
     };
   };
+  
 
   // Random fraction generator
   const generateFraction = () => {
@@ -44,84 +47,88 @@ export default function FractionMatch() {
   // Random downward angle between 30°–150°
   const getRandomAngle = () => 30 + Math.random() * 120;
 
+
   const startNewRound = (reset = false) => {
     hasHitBottomRef.current = false;
+
+    if (reset) {
+        setLives(3);
+        setScore(0);
+        setStreak(0);
+        setGameComplete(false);
+        setRound(0);
+        speedRef.current = 0.45; // reset speed
+    } else {
+        // increment round count
+        setRound((prevRound) => {
+            const newRound = prevRound + 1;
+
+            // Every 5 rounds, multiply speed by 3
+            if (newRound % 5 === 0) {
+                speedRef.current *= 3;
+            }
+
+            return newRound;
+        });
+    }
+
     const newFraction = generateFraction();
     setTargetFraction(newFraction);
     setFeedback({ type: null, message: "" });
     setUserInput("");
     setGameOver(false);
-  
-    // constant X position
+
     const startX = 50;
-  
-    // random downward angle
-    const angle = 30 + Math.random() * 120;
-    const speed = 0.45; // constant speed
-    const vx = Math.cos((angle * Math.PI) / 180) * speed * (Math.random() < 0.5 ? 1 : -1);
-    const vy = Math.sin((angle * Math.PI) / 180) * speed;
-  
+    const angle = getRandomAngle();
+    const vx = Math.cos((angle * Math.PI) / 180) * speedRef.current * (Math.random() < 0.5 ? 1 : -1);
+    const vy = Math.sin((angle * Math.PI) / 180) * speedRef.current;
+
     vxRef.current = vx;
     vyRef.current = vy;
     setPos({ x: startX, y: 5 });
     setVelocity({ vx, vy });
-  
-    if (reset) {
-      setLives(3);
-      setScore(0);
-      setStreak(0);
-      setGameComplete(false);
-    }
-  
+
     cancelAnimationFrame(animationRef.current);
-  
-    //const hasHitBottomRef = useRef(false); // add this near your other refs
 
-const loop = () => {
-  setPos((prev) => {
-    let newX = prev.x + vxRef.current;
-    let newY = prev.y + vyRef.current;
+    const loop = () => {
+        setPos((prev) => {
+            let newX = prev.x + vxRef.current;
+            let newY = prev.y + vyRef.current;
 
-    // Bounce off left/right walls
-    if (newX <= 5 || newX >= 95) {
-      vxRef.current *= -1;
-      newX = Math.min(Math.max(newX, 5), 95);
-    }
+            if (newX <= 5 || newX >= 95) {
+                vxRef.current *= -1;
+                newX = Math.min(Math.max(newX, 5), 95);
+            }
 
-    // If it hits the bottom — only trigger once
-    if (newY >= 95 && !hasHitBottomRef.current) {
-      hasHitBottomRef.current = true; // 🔒 prevent re-entry
-      cancelAnimationFrame(animationRef.current);
-      console.log("in newY>=95 loop");
+            if (newY >= 95 && !hasHitBottomRef.current) {
+                hasHitBottomRef.current = true;
+                cancelAnimationFrame(animationRef.current);
 
-      if (livesRef.current <= 1) {
-        setGameOver(true);
-        setGameComplete(true);
-      } else {
-        livesRef.current -= 1;
-        setLives(livesRef.current);
-        console.log("Life lost");
-        setStreak(0);
+                if (livesRef.current <= 1) {
+                    setGameOver(true);
+                    setGameComplete(true);
+                } else {
+                    livesRef.current -= 1;
+                    setLives(livesRef.current);
+                    setStreak(0);
+                    setTimeout(() => {
+                        hasHitBottomRef.current = false;
+                        startNewRound(); // ✅ round increments again here
+                    }, 800);
+                }
 
-        // schedule next round
-        setTimeout(() => {
-          hasHitBottomRef.current = false; // ✅ reset for next drop
-          startNewRound();
-        }, 800);
-      }
+                return { x: newX, y: 90 };
+            }
 
-      return { x: newX, y: 90 };
-    }
+            return { x: newX, y: newY };
+        });
 
-    return { x: newX, y: newY };
-  });
+        if (!gameOverRef.current) animationRef.current = requestAnimationFrame(loop);
+    };
 
-  if (!gameOverRef.current) animationRef.current = requestAnimationFrame(loop);
+    animationRef.current = requestAnimationFrame(loop);
 };
 
-animationRef.current = requestAnimationFrame(loop);
-
-  };
   
   
   
@@ -182,32 +189,52 @@ animationRef.current = requestAnimationFrame(loop);
     const fractionRegex = /^\s*(\d+)\s*\/\s*(\d+)\s*$/;
     const match = input.match(fractionRegex);
     if (!match) return false;
+  
     const num = parseInt(match[1]);
     const den = parseInt(match[2]);
     if (den === 0) return false;
+  
+    // If input is exactly the same as the displayed fraction, mark wrong
+    if (num === targetFraction.numerator && den === targetFraction.denominator) return false;
+  
     const simpInput = simplifyFraction(num, den);
     const simpTarget = simplifyFraction(targetFraction.numerator, targetFraction.denominator);
+  
     return simpInput.numerator === simpTarget.numerator && simpInput.denominator === simpTarget.denominator;
   };
-
+  
   const handleSubmit = (e) => {
     e.preventDefault();
     if (feedback.type || !userInput.trim()) return;
-
+  
     const correct = checkEquivalent(userInput);
-
+  
     if (correct) {
+      cancelAnimationFrame(animationRef.current);
       const newStreak = streak + 1;
-      const earned = newStreak;
+  
+      // Base points = streak
+      let earned = newStreak;
+  
+      // Calculate multiplier for every 10 streaks
+      const multiplier = Math.pow(2, Math.floor(newStreak / 5));
+  
+      earned = newStreak * multiplier;
+  
       setStreak(newStreak);
       setScore((s) => s + earned);
-      setFeedback({ type: "correct", message: `✅ Correct! +${earned} point${earned > 1 ? "s" : ""}` });
+      setFeedback({
+        type: "correct",
+        message: `✅ Correct! +${earned} point${earned > 1 ? "s" : ""}`,
+      });
+  
       setTimeout(() => startNewRound(), 1000);
     } else {
       setFeedback({ type: "wrong", message: "❌ Wrong" });
       setStreak(0);
     }
   };
+  
 
   if (gameComplete) {
     return (
@@ -218,13 +245,12 @@ animationRef.current = requestAnimationFrame(loop);
             <p>
               Final Score: <span className="fm-final-score">{score}</span>
             </p>
-            <p>
-              Longest Streak: <span className="fm-streak-highlight">{streak}</span>
-            </p>
           </div>
           <button
             className="fm-button"
-            onClick={() => startNewRound(true)} // ✅ Reset everything and restart animation
+            onClick={() =>
+                startNewRound(true)
+            } // ✅ Reset everything and restart animation
           >
             Play Again
           </button>
