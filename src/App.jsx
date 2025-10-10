@@ -7,13 +7,15 @@ import BottomNav from "./components/BottomNav";
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/Signup';
 import GamePage from './pages/GamePage';
-import Game2048 from './pages/Game2048';
 import DiagnosticPage from './pages/DiagnosticPage';
 import SettingsPage from './pages/SettingsPage';
+// Games
+import Game2048 from './pages/Game2048';
 import ArithmeticBlaster from './pages/ArithmeticBlaster';
 import FractionMatch from './pages/FractionMatch';
 import GeometryAreaChallenge from './pages/GeometryAreaChallenge';
 import PiMemoryGame from './pages/PiMemoryGame';
+import PrimeOrNot from './pages/PrimeOrNot';
 
 // Global CSS
 import './App.css';
@@ -102,6 +104,7 @@ const AppContent = () => {
         <Route path="/fraction-match" element={user ? <FractionMatch /> : <Navigate to="/login" state={{ from: '/fraction-match' }} replace />} />
         <Route path="/geometry-area" element={user ? <GeometryAreaChallenge /> : <Navigate to="/login" state={{ from: '/geometry-area' }} replace />} />
         <Route path="/pi-memory" element={user ? <PiMemoryGame /> : <Navigate to="/login" state={{ from: '/pi-memory' }} replace />} />
+        <Route path="/prime-or-not" element={user ? <PrimeOrNot /> : <Navigate to="/login" state={{ from: '/prime-or-not' }} replace />} />
         
         {/* Catch-all route */}
         <Route path="*" element={<Navigate to={user ? "/game" : "/login"} replace />} />
