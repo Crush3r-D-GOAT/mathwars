@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import '../styles/game.css';
 import placeholder from '../assets/placeholder.png';
+import PiMemoryGame from "./PiMemoryGame";
 import SettingsButton from '../components/SettingsButton';
 import { useAuth } from '../context/AuthContext';
 
@@ -15,10 +16,10 @@ export default function GamePage() {
 
   const games = [
     { id: 1, name: "2048", img: placeholder, route: "/2048" },
-    { id: 2, name: "Math Agar", img: placeholder, route: "/math-agar" },
-    { id: 3, name: "Arithmetic Blaster", img: placeholder, route: "/arithmetic-blaster" },
-    { id: 4, name: "Fraction Match", img: placeholder, route: "/fraction-match" },
-    { id: 5, name: "Geometry Area Challenge", img: placeholder, route: "/geometry-area" },
+    { id: 2, name: "Arithmetic Blaster", img: placeholder, route: "/arithmetic-blaster" },
+    { id: 3, name: "Fraction Match", img: placeholder, route: "/fraction-match" },
+    { id: 4, name: "Geometry Area Challenge", img: placeholder, route: "/geometry-area" },
+    { id: 5, name: "Pi Memory Game", img: placeholder, route: "/pi-memory" },
     { id: 6, name: "Coming Soon", img: placeholder, route: "#" },
   ];
 
