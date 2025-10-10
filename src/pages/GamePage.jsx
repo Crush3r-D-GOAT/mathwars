@@ -18,7 +18,8 @@ export default function GamePage() {
     { id: 2, name: "Math Agar", img: placeholder, route: "/math-agar" },
     { id: 3, name: "Arithmetic Blaster", img: placeholder, route: "/arithmetic-blaster" },
     { id: 4, name: "Fraction Match", img: placeholder, route: "/fraction-match" },
-    { id: 5, name: "Coming Soon", img: placeholder, route: "#" },
+    { id: 5, name: "Geometry Area Challenge", img: placeholder, route: "/geometry-area" },
+    { id: 6, name: "Coming Soon", img: placeholder, route: "#" },
   ];
 
   const { user } = useAuth();

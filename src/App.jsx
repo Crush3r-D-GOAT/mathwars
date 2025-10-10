@@ -12,6 +12,7 @@ import DiagnosticPage from './pages/DiagnosticPage';
 import SettingsPage from './pages/SettingsPage';
 import ArithmeticBlaster from './pages/ArithmeticBlaster';
 import FractionMatch from './pages/FractionMatch';
+import GeometryAreaChallenge from './pages/GeometryAreaChallenge';
 
 // Global CSS
 import './App.css';
@@ -98,6 +99,7 @@ const AppContent = () => {
         <Route path="/2048" element={user ? <Game2048 /> : <Navigate to="/login" state={{ from: '/2048' }} replace />} />
         <Route path="/arithmetic-blaster" element={user ? <ArithmeticBlaster /> : <Navigate to="/login" state={{ from: '/arithmetic-blaster' }} replace />} />
         <Route path="/fraction-match" element={user ? <FractionMatch /> : <Navigate to="/login" state={{ from: '/fraction-match' }} replace />} />
+        <Route path="/geometry-area" element={user ? <GeometryAreaChallenge /> : <Navigate to="/login" state={{ from: '/geometry-area' }} replace />} />
         
         {/* Catch-all route */}
         <Route path="*" element={<Navigate to={user ? "/game" : "/login"} replace />} />
