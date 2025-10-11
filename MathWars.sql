@@ -60,3 +60,17 @@ CREATE TABLE IF NOT EXISTS public.diagnosticscores
     Q20 bool,
     dateAttempted date
 );
+
+INSERT INTO games (gameid, gname)
+VALUES
+	(1, '2048'),
+	(2, 'Arithmetic Blaster'),
+	(3, 'Fraction Match'),
+	(4, 'Geometry Area Challenge'),
+	(5, 'Pi Memory Game'),
+	(6, 'Prime or Not'),
+	(7, 'Angle Rush'),
+	(8, 'Equation Blitz'),
+	(9, 'Factor Frenzy'),
+	(10, 'Slope Sprint')
+ON CONFLICT (gameid) DO NOTHING;
