@@ -43,18 +43,20 @@
 }
 
 .angle-header h1 {
-  margin: 0 0 0.5rem;
-  font-size: 2.2rem;
+  margin: 0 0 0.8rem;
+  font-size: 2.4rem;
   font-weight: 700;
   letter-spacing: 1px;
-  background: var(--gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 10px rgba(79, 172, 254, 0.3);
+  color: #4cc9f0;  /* Bright blue color */
+  text-shadow: 
+    0 0 5px #fff,
+    0 0 15px #4cc9f0,
+    0 0 25px #3a86ff;
   font-family: 'Orbitron', sans-serif;
   text-transform: uppercase;
-  margin-bottom: 0.8rem;
+  position: relative;
+  display: inline-block;
+  padding: 0 1rem;
 }
 
 .angle-stats {
@@ -248,7 +250,7 @@
 }
 
 .angle-btn:active {
-  transform: translateY(0);
+  transform: translateY(1px);
   box-shadow: 0 4px 10px rgba(0, 242, 254, 0.2);
 }
 
@@ -432,6 +434,75 @@
   10% { opacity: 0.5; }
   90% { opacity: 0.5; }
   100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+}
+
+/* Angle Rush Game Over Styles */
+.angle-game-over {
+  text-align: center;
+  background: rgba(15, 23, 42, 0.95);
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  margin: 2rem auto 0;
+  max-width: 500px;
+  border: 1px solid rgba(76, 201, 240, 0.3);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+  z-index: 10;
+  color: #f8fafc;
+}
+
+.angle-game-over::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #4cc9f0, #3a86ff);
+}
+
+.angle-game-over h1 {
+  color: #4cc9f0;
+  margin: 0 0 1.5rem;
+  font-size: 2.5rem;
+  text-shadow: 0 0 10px rgba(76, 201, 240, 0.6);
+}
+
+.angle-game-over p {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  color: #e2e8f0;
+}
+
+.angle-play-again {
+  background: linear-gradient(90deg, #4cc9f0, #3a86ff);
+  color: #0f172a;
+  padding: 1rem 2.5rem;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(76, 201, 240, 0.4);
+  margin-top: 1rem;
+  font-family: 'Orbitron', sans-serif;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.angle-play-again:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(76, 201, 240, 0.6);
+}
+
+.angle-play-again:active {
+  transform: translateY(1px);
 }
 
 /* Add some decorative elements */

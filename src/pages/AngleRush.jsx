@@ -104,10 +104,10 @@ export default function AngleRush() {
 
   if (gameOver) {
     return (
-      <div className="angle-container game-over">
+      <div className="angle-game-over">
         <h1>💀 Game Over!</h1>
         <p>Final Score: {score}</p>
-        <button className="btn play-again" onClick={resetGame}>
+        <button className="btn angle-play-again" onClick={resetGame}>
           Play Again
         </button>
       </div>
