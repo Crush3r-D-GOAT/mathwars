@@ -125,7 +125,7 @@ export default function PrimeOrNot({ withTimer = true, timerSeconds = 8 }) {
       
         return newLives;
       });
-            
+      
       setShowExplain(true);
       setTimeout(() => {
         if (lives - 1 > 0) nextNumber();

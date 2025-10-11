@@ -21,7 +21,8 @@ export default function GamePage() {
     { id: 4, name: "Geometry Area Challenge", img: placeholder, route: "/geometry-area" },
     { id: 5, name: "Pi Memory Game", img: placeholder, route: "/pi-memory" },
     { id: 6, name: "Prime or Not", img: placeholder, route: "/prime-or-not" },
-    { id: 7, name: "Coming Soon", img: placeholder, route: "#" },
+    { id: 7, name: "Angle Rush", img: placeholder, route: "/angle-rush" },
+    { id: 8, name: "Coming Soon", img: placeholder, route: "#" },
   ];
 
   const { user } = useAuth();

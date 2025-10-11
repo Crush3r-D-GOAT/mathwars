@@ -16,6 +16,7 @@ import FractionMatch from './pages/FractionMatch';
 import GeometryAreaChallenge from './pages/GeometryAreaChallenge';
 import PiMemoryGame from './pages/PiMemoryGame';
 import PrimeOrNot from './pages/PrimeOrNot';
+import AngleRush from './pages/AngleRush';
 
 // Global CSS
 import './App.css';
@@ -105,6 +106,7 @@ const AppContent = () => {
         <Route path="/geometry-area" element={user ? <GeometryAreaChallenge /> : <Navigate to="/login" state={{ from: '/geometry-area' }} replace />} />
         <Route path="/pi-memory" element={user ? <PiMemoryGame /> : <Navigate to="/login" state={{ from: '/pi-memory' }} replace />} />
         <Route path="/prime-or-not" element={user ? <PrimeOrNot /> : <Navigate to="/login" state={{ from: '/prime-or-not' }} replace />} />
+        <Route path="/angle-rush" element={user ? <AngleRush /> : <Navigate to="/login" state={{ from: '/angle-rush' }} replace />} />
         
         {/* Catch-all route */}
         <Route path="*" element={<Navigate to={user ? "/game" : "/login"} replace />} />
