@@ -19,6 +19,7 @@ import PrimeOrNot from './pages/PrimeOrNot';
 import AngleRush from './pages/AngleRush';
 import EquationBlitz from './pages/EquationBlitz';
 import FactorFrenzy from './pages/FactorFrenzy';
+import SlopeSprint from './pages/SlopeSprint';
 
 // Global CSS
 import './App.css';
@@ -111,6 +112,7 @@ const AppContent = () => {
         <Route path="/angle-rush" element={user ? <AngleRush /> : <Navigate to="/login" state={{ from: '/angle-rush' }} replace />} />
         <Route path="/equation-blitz" element={user ? <EquationBlitz /> : <Navigate to="/login" state={{ from: '/equation-blitz' }} replace />} />
         <Route path="/factor-frenzy" element={user ? <FactorFrenzy /> : <Navigate to="/login" state={{ from: '/factor-frenzy' }} replace />} />
+        <Route path="/slope-sprint" element={user ? <SlopeSprint /> : <Navigate to="/login" state={{ from: '/slope-sprint' }} replace />} />
         
         {/* Catch-all route */}
         <Route path="*" element={<Navigate to={user ? "/game" : "/login"} replace />} />

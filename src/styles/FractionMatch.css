@@ -221,22 +221,61 @@
   border: none;
   padding: 12px 25px;
   font-size: 1.1rem;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
+  margin-top: 20px;
   font-family: 'Orbitron', sans-serif;
   font-weight: bold;
   text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  min-width: 180px;
 }
 
 .fm-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 .fm-button:active {
   transform: translateY(0);
+}
+
+.fm-button-secondary {
+  background: transparent;
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  margin-left: 12px;
+  box-shadow: 0 0 10px rgba(74, 111, 165, 0.3);
+}
+
+.fm-button-secondary:hover {
+  background: rgba(74, 111, 165, 0.1);
+  box-shadow: 0 0 15px rgba(74, 111, 165, 0.4);
+}
+
+.fm-game-over-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 25px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .fm-game-over-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .fm-button, .fm-button-secondary {
+    margin: 8px 0;
+    width: 100%;
+    max-width: 220px;
+  }
 }
 
 .fm-lives {

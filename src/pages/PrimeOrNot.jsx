@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
+import { useAuth } from "../context/AuthContext";
+import { fetchHighScore, saveGameData } from "../api/client";
 import "../styles/PrimeOrNot.css";
 
 // Helper function moved outside component
@@ -11,6 +13,8 @@ const smallestDivisor = (n) => {
 };
 
 export default function PrimeOrNot({ withTimer = true, timerSeconds = 8 }) {
+  const { user } = useAuth();
+  const [highScore, setHighScore] = useState(0);
   const [num, setNum] = useState(0);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
@@ -25,9 +29,23 @@ export default function PrimeOrNot({ withTimer = true, timerSeconds = 8 }) {
 
 
 
+  // Fetch high score when component mounts or user changes
   useEffect(() => {
+    const loadHighScore = async () => {
+      if (user?.userid) {
+        try {
+          // Game ID 6 for PrimeOrNot
+          const response = await fetchHighScore(user.userid, 6);
+          setHighScore(parseInt(response) || 0);
+        } catch (error) {
+          console.error('Failed to load high score:', error);
+        }
+      }
+    };
+
+    loadHighScore();
     nextNumber();
-  }, []);
+  }, [user?.userid]);
 
   useEffect(() => {
     if (!withTimer) return;
@@ -168,11 +186,41 @@ export default function PrimeOrNot({ withTimer = true, timerSeconds = 8 }) {
   };
   
 
+  const saveScore = async (finalScore) => {
+    if (!user) return;
+
+    try {
+      const gameData = {
+        userid: user.userid,
+        gameid: 6, // Game ID for PrimeOrNot
+        score: finalScore,
+        highscore: Math.max(finalScore, highScore),
+        dateplayed: new Date().toISOString()
+      };
+
+      await saveGameData(gameData);
+      
+      // Update high score if needed
+      if (finalScore > highScore) {
+        setHighScore(finalScore);
+      }
+    } catch (error) {
+      console.error('Error saving score:', error);
+    }
+  };
+
   const resetGame = () => {
+    // Save score before resetting if game was in progress
+    if (score > 0) {
+      saveScore(score);
+    }
+    
     setScore(0);
     setLives(3);
     setStreak(0);
     setFeedback("");
+    setGameOver(false);
+    setTimeLeft(timerSeconds);
     nextNumber();
   };
 
@@ -182,29 +230,32 @@ export default function PrimeOrNot({ withTimer = true, timerSeconds = 8 }) {
         <div className="prime-gameover">
           <h2>💀 Game Over!</h2>
           <p>Your final score: {score}</p>
-          <button
-            className="btn"
-            onClick={() => {
-              setScore(0);
-              setLives(3);
-              setStreak(0);
-              setFeedback("");
-              setGameOver(false);
-              nextNumber();
-            }}
-          >
-            Play Again
-          </button>
+          <div className="prime-game-over-buttons">
+            <button className="btn prime-play-again" onClick={resetGame}>
+              Play Again
+            </button>
+            <button 
+              className="btn prime-main-menu" 
+              onClick={() => window.location.href = '/'}
+            >
+              Back to Main Menu
+            </button>
+          </div>
         </div>
       ) : (
         <>
           <header className="prime-header">
             <h1>🔢 Prime or Not?</h1>
             <div className="prime-stats">
-              <span>⭐ {score}</span>
-              <span>🔥 Streak: {streak}</span>
-              <span>❤️ {lives}</span>
-              {withTimer && <span>⏱ {timeLeft}s</span>}
+              <div className="score-section">
+                <span>⭐ {score}</span>
+                {highScore > 0 && <span className="high-score">🏆 {highScore}</span>}
+              </div>
+              <div className="stats-section">
+                <span>🔥 {streak}</span>
+                <span>❤️ {lives}</span>
+                {withTimer && <span>⏱ {timeLeft}s</span>}
+              </div>
             </div>
           </header>
 

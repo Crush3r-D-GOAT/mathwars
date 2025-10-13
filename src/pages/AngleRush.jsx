@@ -1,9 +1,28 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/AngleRush.css";
+import { useAuth } from "../context/AuthContext";
+import { fetchHighScore, saveGameData } from "../api/client";
 
 export default function AngleRush() {
-  const [angle, setAngle] = useState(0);
-  const [type, setType] = useState("");
+
+
+    const types = ["acute", "right", "obtuse", "straight", "reflex"];
+
+    const classifyAngle = (deg) => {
+      if (deg < 90) return "acute";
+      if (deg === 90) return "right";
+      if (deg > 90 && deg < 180) return "obtuse";
+      if (deg === 180) return "straight";
+      return "reflex";
+    };
+  const { user } = useAuth();
+  const [angle, setAngle] = useState(() => {
+    const first = Math.ceil(Math.random() * 350) + 1; // random angle
+    return first;
+  });
+  
+  const [type, setType] = useState(() => classifyAngle(Math.ceil(Math.random() * 350) + 1));
+  
   const [feedback, setFeedback] = useState("");
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -11,18 +30,13 @@ export default function AngleRush() {
   const [timeLeft, setTimeLeft] = useState(6);
   const [gameOver, setGameOver] = useState(false);
   const [shake, setShake] = useState(false);
+  const [highScore, setHighScore] = useState(0);
+  const gameSavedRef = useRef(false);
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
   const timerRef = useRef(null);
-  const timeOverRef = useRef(false); // ✅ fixes React Strict Mode double-trigger
+  const timeOverRef = useRef(false);
 
-  const types = ["acute", "right", "obtuse", "straight", "reflex"];
 
-  const classifyAngle = (deg) => {
-    if (deg < 90) return "acute";
-    if (deg === 90) return "right";
-    if (deg > 90 && deg < 180) return "obtuse";
-    if (deg === 180) return "straight";
-    return "reflex";
-  };
 
   const newAngle = () => {
     const a = Math.ceil(Math.random() * 350) + 1;
@@ -33,11 +47,22 @@ export default function AngleRush() {
     timeOverRef.current = false;
   };
 
+  // Load high score on mount
   useEffect(() => {
-    newAngle();
-  }, []);
+    const loadHighScore = async () => {
+      if (user?.userid) {
+        try {
+          const savedHighScore = await fetchHighScore(user.userid, 7); // 7 = Angle Rush game ID
+          setHighScore(parseInt(savedHighScore) || 0);
+        } catch (err) {
+          console.error("Failed to load high score", err);
+        }
+      }
+    };
+    loadHighScore();
+  }, [user?.userid]);
 
-  // ⏱ timer
+  // Timer
   useEffect(() => {
     if (gameOver) return;
     timeOverRef.current = false;
@@ -65,7 +90,14 @@ export default function AngleRush() {
 
     if (choice === type) {
       setFeedback("✅ Correct!");
-      setScore((s) => s + 5 + streak);
+      setScore((s) => {
+        const newScore = s + 5 + streak;
+        if (newScore > highScore) {
+          setHighScore(newScore);
+          setIsNewHighScore(true);
+        }
+        return newScore;
+      });
       setStreak((st) => st + 1);
       setTimeout(newAngle, 700);
     } else {
@@ -74,15 +106,16 @@ export default function AngleRush() {
     }
   };
 
-  const loseLife = () => {
+// Replace the saveGame call in loseLife with just setGameOver(true)
+const loseLife = () => {
     setStreak(0);
     setShake(true);
-    
+  
     setLives((l) => {
       const newLives = l - 1;
       if (newLives <= 0) {
         clearInterval(timerRef.current);
-        setGameOver(true);
+        setGameOver(true);  // <-- only set game over here
       } else {
         setTimeout(() => {
           setShake(false);
@@ -92,6 +125,34 @@ export default function AngleRush() {
       return newLives;
     });
   };
+  
+  // Save game exactly once when gameOver flips to true
+  useEffect(() => {
+    if (gameOver && !gameSavedRef.current) {
+      saveGame(score);
+      gameSavedRef.current = true;
+    }
+  }, [gameOver, score]);
+  
+
+  const saveGame = async (finalScore) => {
+
+    try {
+      const newHighScore = Math.max(highScore, finalScore);
+      const gameData = {
+        userid: user.userid,
+        gameid: 7, // Angle Rush
+        score: finalScore,
+        highscore: newHighScore,
+        dateplayed: new Date().toISOString(),
+      };
+      await saveGameData(gameData);
+      setHighScore(newHighScore);
+      console.log("Angle Rush data saved:", gameData);
+    } catch (err) {
+      console.error("Failed to save Angle Rush game", err);
+    }
+  };
 
   const resetGame = () => {
     setScore(0);
@@ -99,6 +160,8 @@ export default function AngleRush() {
     setStreak(0);
     setGameOver(false);
     setShake(false);
+    gameSavedRef.current = false;
+    setIsNewHighScore(false);
     newAngle();
   };
 
@@ -107,9 +170,18 @@ export default function AngleRush() {
       <div className="angle-game-over">
         <h1>💀 Game Over!</h1>
         <p>Final Score: {score}</p>
-        <button className="btn angle-play-again" onClick={resetGame}>
-          Play Again
-        </button>
+        <p>High Score: {highScore} {isNewHighScore && "🎉 New!"}</p>
+        <div className="angle-game-over-buttons">
+          <button className="btn angle-play-again" onClick={resetGame}>
+            Play Again
+          </button>
+          <button 
+            className="btn angle-main-menu" 
+            onClick={() => window.location.href = '/'}
+          >
+            Back to Main Menu
+          </button>
+        </div>
       </div>
     );
   }
@@ -123,12 +195,13 @@ export default function AngleRush() {
           <span>🔥 {streak}</span>
           <span>❤️ {lives}</span>
           <span>⏱ {timeLeft}s</span>
+          <span>🏆 {highScore} {isNewHighScore && "🎉"}</span>
         </div>
       </header>
 
       <main className="angle-main">
         <div className="angle-display">
-          <div className="angle-ray base" style={{ transform: `rotate(${0}deg)` }}></div>
+          <div className="angle-ray base" style={{ transform: `rotate(0deg)` }}></div>
           <div className="angle-ray rotated" style={{ transform: `rotate(${360-angle}deg)` }}></div>
           <div className="angle-center">•</div>
         </div>

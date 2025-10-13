@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/FractionMatch.css";
+import { useAuth } from "../context/AuthContext";
+import { fetchHighScore, saveGameData } from "../api/client";
 
 export default function FractionMatch() {
+  const { user } = useAuth();
+
   const [pos, setPos] = useState({ x: 50, y: 5 });
-  const [velocity, setVelocity] = useState({ vx: 0, vy: 0.2 });
   const [gameOver, setGameOver] = useState(false);
   const [lives, setLives] = useState(3);
   const [streak, setStreak] = useState(0);
@@ -13,63 +16,69 @@ export default function FractionMatch() {
   const [targetFraction, setTargetFraction] = useState({ numerator: 1, denominator: 2 });
   const [gameComplete, setGameComplete] = useState(false);
   const [round, setRound] = useState(0);
-  const speedRef = useRef(0.45); // Tracks how many rounds have occurred
+  const [highScore, setHighScore] = useState(0);
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
 
+  const speedRef = useRef(0.45);
   const animationRef = useRef(null);
   const vxRef = useRef(0);
   const vyRef = useRef(0);
   const livesRef = useRef(lives);
   const gameOverRef = useRef(gameOver);
-
+  const gameSavedRef = useRef(false);
   const hasHitBottomRef = useRef(false);
 
   useEffect(() => { livesRef.current = lives; }, [lives]);
   useEffect(() => { gameOverRef.current = gameOver; }, [gameOver]);
 
-  // Utility: simplify a fraction
+  // Load high score on mount
+  useEffect(() => {
+    const loadHighScore = async () => {
+      if (user?.userid) {
+        try {
+          const savedHighScore = await fetchHighScore(user.userid, 3); // Game ID 3
+          setHighScore(parseInt(savedHighScore) || 0);
+        } catch (err) {
+          console.error("Failed to load high score", err);
+        }
+      }
+    };
+    loadHighScore();
+  }, [user?.userid]);
+
+  // Simplify fraction
   const simplifyFraction = (numerator, denominator) => {
     const gcd = (a, b) => (b ? gcd(b, a % b) : a);
     const divisor = gcd(numerator, denominator);
-    return {
-      numerator: numerator / divisor,
-      denominator: denominator / divisor,
-    };
+    return { numerator: numerator / divisor, denominator: denominator / divisor };
   };
-  
 
-  // Random fraction generator
+  // Generate random fraction
   const generateFraction = () => {
     const denominator = 2 + Math.floor(Math.random() * 12);
     const numerator = 1 + Math.floor(Math.random() * (denominator - 1));
     return { numerator, denominator };
   };
 
-  // Random downward angle between 30°–150°
   const getRandomAngle = () => 30 + Math.random() * 120;
-
 
   const startNewRound = (reset = false) => {
     hasHitBottomRef.current = false;
 
     if (reset) {
-        setLives(3);
-        setScore(0);
-        setStreak(0);
-        setGameComplete(false);
-        setRound(0);
-        speedRef.current = 0.45; // reset speed
+      setLives(3);
+      setScore(0);
+      setStreak(0);
+      setGameComplete(false);
+      setRound(0);
+      speedRef.current = 0.45;
+      gameSavedRef.current = false;
     } else {
-        // increment round count
-        setRound((prevRound) => {
-            const newRound = prevRound + 1;
-
-            // Every 5 rounds, multiply speed by 3
-            if (newRound % 10 === 0) {
-                speedRef.current *= 1.25;
-            }
-
-            return newRound;
-        });
+      setRound((prevRound) => {
+        const newRound = prevRound + 1;
+        if (newRound % 10 === 0) speedRef.current *= 1.25;
+        return newRound;
+      });
     }
 
     const newFraction = generateFraction();
@@ -86,88 +95,34 @@ export default function FractionMatch() {
     vxRef.current = vx;
     vyRef.current = vy;
     setPos({ x: startX, y: 5 });
-    setVelocity({ vx, vy });
 
     cancelAnimationFrame(animationRef.current);
 
     const loop = () => {
-        setPos((prev) => {
-            let newX = prev.x + vxRef.current;
-            let newY = prev.y + vyRef.current;
-
-            if (newX <= 5 || newX >= 95) {
-                vxRef.current *= -1;
-                newX = Math.min(Math.max(newX, 5), 95);
-            }
-
-            if (newY >= 95 && !hasHitBottomRef.current) {
-                hasHitBottomRef.current = true;
-                cancelAnimationFrame(animationRef.current);
-
-                if (livesRef.current <= 1) {
-                    setGameOver(true);
-                    setGameComplete(true);
-                } else {
-                    livesRef.current -= 1;
-                    setLives(livesRef.current);
-                    setStreak(0);
-                    setTimeout(() => {
-                        hasHitBottomRef.current = false;
-                        startNewRound(); // ✅ round increments again here
-                    }, 800);
-                }
-
-                return { x: newX, y: 90 };
-            }
-
-            return { x: newX, y: newY };
-        });
-
-        if (!gameOverRef.current) animationRef.current = requestAnimationFrame(loop);
-    };
-
-    animationRef.current = requestAnimationFrame(loop);
-};
-
-  
-  
-  
-
-  useEffect(() => {
-    startNewRound(true);
-  }, []);
-
-  /*useEffect(() => {
-    let lastTime = performance.now();
-
-    const loop = (time) => {
-      lastTime = time;
-
       setPos((prev) => {
         let newX = prev.x + vxRef.current;
         let newY = prev.y + vyRef.current;
 
-        // Bounce off left/right walls
         if (newX <= 5 || newX >= 95) {
           vxRef.current *= -1;
           newX = Math.min(Math.max(newX, 5), 95);
         }
 
-        // If it hits the bottom
-        if (newY >= 90) {
+        if (newY >= 95 && !hasHitBottomRef.current) {
+          hasHitBottomRef.current = true;
           cancelAnimationFrame(animationRef.current);
 
           if (livesRef.current <= 1) {
             setGameOver(true);
             setGameComplete(true);
+            saveGame(score);
           } else {
-            setLives((prev) => prev - 1);
+            livesRef.current -= 1;
+            setLives(livesRef.current);
             setStreak(0);
-
-            // restart next round reliably after 0.8s
             setTimeout(() => {
+              hasHitBottomRef.current = false;
               startNewRound();
-              animationRef.current = requestAnimationFrame(loop);
             }, 800);
           }
 
@@ -181,60 +136,80 @@ export default function FractionMatch() {
     };
 
     animationRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(animationRef.current);
-  }, []);*/
+  };
 
-  // Check if two fractions are equivalent
+  useEffect(() => {
+    startNewRound(true);
+  }, []);
+
   const checkEquivalent = (input) => {
     const fractionRegex = /^\s*(\d+)\s*\/\s*(\d+)\s*$/;
     const match = input.match(fractionRegex);
     if (!match) return false;
-  
+
     const num = parseInt(match[1]);
     const den = parseInt(match[2]);
     if (den === 0) return false;
-  
-    // If input is exactly the same as the displayed fraction, mark wrong
+
     if (num === targetFraction.numerator && den === targetFraction.denominator) return false;
-  
+
     const simpInput = simplifyFraction(num, den);
     const simpTarget = simplifyFraction(targetFraction.numerator, targetFraction.denominator);
-  
+
     return simpInput.numerator === simpTarget.numerator && simpInput.denominator === simpTarget.denominator;
   };
-  
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (feedback.type || !userInput.trim()) return;
-  
+
     const correct = checkEquivalent(userInput);
-  
+
     if (correct) {
       cancelAnimationFrame(animationRef.current);
       const newStreak = streak + 1;
-  
-      // Base points = streak
+
       let earned = newStreak;
-  
-      // Calculate multiplier for every 10 streaks
       const multiplier = Math.pow(2, Math.floor(newStreak / 5));
-  
       earned = newStreak * multiplier;
-  
+
       setStreak(newStreak);
-      setScore((s) => s + earned);
-      setFeedback({
-        type: "correct",
-        message: `✅ Correct! +${earned} point${earned > 1 ? "s" : ""}`,
+      setScore((s) => {
+        const newScore = s + earned;
+        if (newScore > highScore) {
+          setHighScore(newScore);
+          setIsNewHighScore(true);
+        }
+        return newScore;
       });
-  
+
+      setFeedback({ type: "correct", message: `✅ Correct! +${earned} point${earned > 1 ? "s" : ""}` });
       setTimeout(() => startNewRound(), 1000);
     } else {
       setFeedback({ type: "wrong", message: "❌ Wrong" });
       setStreak(0);
     }
   };
-  
+
+  const saveGame = async (finalScore) => {
+    if (!user || gameSavedRef.current) return;
+
+    try {
+      const newHighScore = Math.max(highScore, finalScore);
+      const gameData = {
+        userid: user.userid,
+        gameid: 3, // Fraction Match
+        score: finalScore,
+        highscore: newHighScore,
+        dateplayed: new Date().toISOString(),
+      };
+      await saveGameData(gameData);
+      gameSavedRef.current = true;
+      console.log("Fraction Match data saved:", gameData);
+    } catch (err) {
+      console.error("Failed to save Fraction Match game", err);
+    }
+  };
 
   if (gameComplete) {
     return (
@@ -242,23 +217,17 @@ export default function FractionMatch() {
         <div className="fm-game-over">
           <h2>🏆 Game Over! 🏆</h2>
           <div className="fm-score-summary">
-            <p>
-              Final Score: <span className="fm-final-score">{score}</span>
-            </p>
+            <p>Final Score: <span className="fm-final-score">{score}</span></p>
+            <p>High Score: {highScore} {isNewHighScore && "🎉 New!"}</p>
           </div>
-          <button
-            className="fm-button"
-            onClick={() =>
-                startNewRound(true)
-            } // ✅ Reset everything and restart animation
-          >
-            Play Again
-          </button>
+          <div className="fm-game-over-buttons">
+            <button className="fm-button" onClick={() => startNewRound(true)}>Play Again</button>
+            <button className="fm-button fm-button-secondary" onClick={() => window.location.href = '/'}>Back to Main Menu</button>
+          </div>
         </div>
       </div>
     );
   }
-  
 
   return (
     <div className="fm-container">
@@ -266,12 +235,9 @@ export default function FractionMatch() {
 
       <div className="fm-stats">
         <div className="fm-score-display">
-          <div>
-            Score: <span className="fm-score-value">{score}</span>
-          </div>
-          <div className="fm-streak">
-            🔥 Streak: <span className="fm-streak-count">{streak}</span>
-          </div>
+          <div>Score: <span className="fm-score-value">{score}</span></div>
+          <div>🔥 Streak: <span className="fm-streak-count">{streak}</span></div>
+          <div>🏆 High Score: <span className="fm-highscore">{highScore}</span> {isNewHighScore && "🎉"}</div>
         </div>
         <div className="fm-lives">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -296,35 +262,16 @@ export default function FractionMatch() {
             disabled={!!feedback.type && !gameOver}
             autoFocus
           />
-          <button
-            type="submit"
-            className="fm-button"
-            disabled={!userInput.trim() || (!!feedback.type && !gameOver)}
-          >
-            Submit
-          </button>
+          <button type="submit" className="fm-button" disabled={!userInput.trim() || (!!feedback.type && !gameOver)}>Submit</button>
         </form>
         {feedback.type && <div className={`fm-feedback ${feedback.type}`}>{feedback.message}</div>}
       </div>
 
       <div className="fm-space">
-        <div
-          className="fm-fraction"
-          style={{
-            left: `${pos.x}%`,
-            top: `${pos.y}%`,
-            transform: "translate(-50%, -50%)",
-          }}
-        >
+        <div className="fm-fraction" style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: "translate(-50%, -50%)" }}>
           {targetFraction.numerator}/{targetFraction.denominator}
         </div>
       </div>
-
-      {gameOver && (
-        <button className="fm-button" onClick={() => startNewRound()}>
-          Next Round
-        </button>
-      )}
     </div>
   );
 }

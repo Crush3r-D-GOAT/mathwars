@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/FactorFrenzy.css";
+import { fetchHighScore, saveGameData } from "../api/client.js";
+import { useAuth } from '../context/AuthContext';
 
 function getFactors(n) {
   const factors = [];
@@ -35,10 +37,81 @@ export default function FactorFrenzy({
   const [currentTimer, setCurrentTimer] = useState(startTime);
   const [rounds, setRounds] = useState(0); // total rounds completed
   const [gameOver, setGameOver] = useState(false);
+  const [highScore, setHighScore] = useState(null);
+  const { user } = useAuth();
 
   const timerRef = useRef(null);
   const timeOverRef = useRef(false); // Strict-mode safe guard
 
+  console.log("🪞 window.user on load:", user);
+
+// Fetch high score once at the start
+    useEffect(() => {
+        const loadHighScore = async () => {
+        try {
+            const userId = user?.userid;
+            if (!userId) {
+            console.warn("⚠️ No user ID found on window.user — skipping initial high score fetch.");
+            return;
+            }
+    
+            console.log("📥 Fetching initial high score...");
+            const fetched = await fetchHighScore(userId, 9);
+            console.log("🎯 Initial high score fetched:", fetched);
+            setHighScore(fetched || 0);
+        } catch (err) {
+            console.error("❌ Error fetching initial high score:", err);
+            setHighScore(0);
+        }
+        };
+    
+        loadHighScore();
+    }, [user]);
+    
+
+    useEffect(() => {
+        if (score > highScore) {
+          console.log(`🏆 New high score achieved! ${score} > ${highScore}`);
+          setHighScore(score);
+        }
+      }, [score, highScore]);
+
+  useEffect(() => {
+    if (!gameOver) return;
+  
+    (async () => {
+      try {
+        console.log("💥 Game over detected. Preparing to save game data...");
+  
+        const userId = user?.userid;
+        if (!userId) {
+          console.warn("⚠️ No user ID found on window.user — skipping save.");
+          return;
+        }
+  
+        if (typeof saveGameData === "function") {
+          const payload = {
+            userid: userId,  // ✅ use lowercase key names expected by backend
+            gameid: 9,
+            score: score,
+            highscore: score, // send new score as highscore candidate
+            dateplayed: new Date().toISOString()
+          };
+          console.log("📤 Sending game data payload:", payload);
+  
+          const response = await saveGameData(payload);
+          console.log("✅ saveGameData response:", response);
+        } else {
+          console.warn("⚠️ saveGameData is not a function.");
+        }
+      } catch (err) {
+        console.error("❌ Error saving or fetching high score:", err);
+      }
+    })();
+  }, [gameOver]);
+  
+  
+  
   // generate random integer in range
   const rand = (min, max) =>
     Math.floor(Math.random() * (max - min + 1)) + min;
@@ -174,7 +247,7 @@ export default function FactorFrenzy({
     if (success) {
       const numFactors = candidates.filter((c) => c.isFactor).length;
       // points: number of factors * (streak+1)
-      setScore((s) => s + Math.floor(Math.pow(numFactors, 2) * (streak + 1)*Math.pow(1.5, Math.floor(rounds/5))));
+      setScore((s) => s + Math.floor(Math.pow(numFactors, 2) * (streak + 1)*Math.pow(1.5, Math.floor(streak/5))));
       setStreak((st) => st + 1);
       setFeedback(message || "Success!");
       // next round after short pause
@@ -218,12 +291,25 @@ export default function FactorFrenzy({
       <div className="ff-container">
         <div className="ff-card ff-game-over">
           <h2>💥 Game Over — Factor Frenzy</h2>
-          <p className="ff-final">Final Score: <strong>{score}</strong></p>
-          <button className="ff-btn ff-primary" onClick={resetGame}>Play Again</button>
+          <p className="ff-final">
+            Final Score: <strong>{score}</strong>
+          </p>
+          <div className="ff-game-over-buttons">
+            <button className="ff-btn ff-primary" onClick={resetGame}>
+              Play Again
+            </button>
+            <button
+              className="ff-btn ff-secondary"
+              onClick={() => (window.location.href = "/")}
+            >
+              Back to Main Menu
+            </button>
+          </div>
         </div>
       </div>
     );
   }
+  
 
   return (
     <div className="ff-container">
@@ -232,6 +318,7 @@ export default function FactorFrenzy({
           <h1>🧩 Factor Frenzy</h1>
           <div className="ff-stats">
             <span>🏆 {score}</span>
+            <span>🥇 {highScore}</span>
             <span>🔥 {streak}</span>
             <span>❤️ {lives}</span>
             <span>⏱ {timeLeft}s</span>

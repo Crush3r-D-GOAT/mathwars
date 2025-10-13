@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/PiMemoryGame.css";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { fetchHighScore, saveGameData } from "../api/client";
 
 const PI_DIGITS = "3.14159265358979323846264338327950288419716939937510";
 
@@ -13,8 +15,73 @@ export default function PiMemoryGame() {
   const [message, setMessage] = useState("");
   const interval = useRef(null);
   const [startTime, setStartTime] = useState(null);
+  const [highScore, setHighScore] = useState(0);
+  const {user} = useAuth();
+  const [gameOver, setGameOver] = useState(false);
 
 
+  useEffect(() => {
+      const loadHighScore = async () => {
+        try {
+          const userId = user?.userid;
+          if (!userId) {
+            console.warn("⚠️ No user ID found — skipping high score fetch.");
+            return;
+          }
+    
+          console.log("📥 Fetching initial high score...");
+          const fetched = await fetchHighScore(userId, 5);
+          console.log("🎯 Initial high score fetched:", fetched);
+          setHighScore(fetched || 0);
+        } catch (err) {
+          console.error("❌ Error fetching initial high score:", err);
+          setHighScore(0);
+        }
+      };
+    
+      loadHighScore();
+    }, [user]);
+    
+    // 🏆 2️⃣ Live update local high score during gameplay
+    useEffect(() => {
+      if (score > highScore) {
+        console.log(`🏆 New high score during game! ${score} > ${highScore}`);
+        setHighScore(score);
+      }
+    }, [score, highScore]);
+    
+    // 💾 3️⃣ Save data to backend when game ends
+    useEffect(() => {
+      if (!gameOver) return;
+    
+      const saveData = async () => {
+        try {
+          const userId = user?.userid;
+          if (!userId) {
+            console.warn("⚠️ No user ID found — skipping save.");
+            return;
+          }
+    
+          console.log("💾 Saving game data to backend...");
+          await saveGameData({
+            userid: userId,
+            gameid: 5,
+            score: score,
+            highscore: highScore,
+            dateplayed: new Date().toISOString(),
+          });
+    
+          // 🔁 Re-fetch updated high score to confirm
+          const updatedHigh = await fetchHighScore(userId, 10);
+          console.log("📈 Updated high score fetched after save:", updatedHigh);
+          setHighScore(updatedHigh || highScore);
+        } catch (err) {
+          console.error("❌ Error saving game data:", err);
+        }
+      };
+    
+      saveData();
+    }, [gameOver]);
   useEffect(() => {
     startRound(1);
     return () => clearInterval(interval.current);
@@ -52,11 +119,11 @@ export default function PiMemoryGame() {
   
     if (seconds < tenthThreshold){
       console.log("tenth")
-      return 1.20;
+      return 1.50;
     } // +10%
     if (seconds < thirdThreshold){
       console.log("third")
-      return 1.10;
+      return 1.20;
     }
     else{
       console.log("else")
@@ -89,6 +156,7 @@ export default function PiMemoryGame() {
           startRound(nextLevel);
         } else {
           setPhase("gameover");
+          setGameOver(true);
           setMessage(`❌ Wrong! Correct was ${correct}`);
         }
       }, 500); // 2-second suspense delay
@@ -139,6 +207,7 @@ export default function PiMemoryGame() {
                   setLevel(1);
                   setScore(0);
                   startRound(1);
+                  setGameOver(false);
                 }}
                 className="btn-primary"
               >
@@ -155,6 +224,10 @@ export default function PiMemoryGame() {
           <div className="stat">
             <span className="stat-label">SCORE</span>
             <span className="stat-value">{score}</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">HIGHSCORE</span>
+            <span className="stat-value">{highScore}</span>
           </div>
           <div className="stat">
             <span className="stat-label">LEVEL</span>

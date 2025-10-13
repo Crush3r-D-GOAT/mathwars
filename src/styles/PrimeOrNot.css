@@ -55,6 +55,67 @@
     align-items:center;
   }
   
+  .prime-gameover{
+    text-align:center;
+    background:white;
+    padding:30px;
+    border-radius:12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    max-width:500px;
+    margin:0 auto;
+  }
+
+  .prime-game-over-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .prime-play-again {
+    background: linear-gradient(90deg, var(--accent), #1d4ed8);
+    color: white;
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
+  }
+
+  .prime-play-again:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(37, 99, 235, 0.3);
+  }
+
+  .prime-play-again:active {
+    transform: translateY(0);
+  }
+
+  .prime-main-menu {
+    background: #f1f5f9;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .prime-main-menu:hover {
+    background: #e2e8f0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .prime-main-menu:active {
+    transform: translateY(0);
+  }
+  
   .prime-card{
     width:100%;
     display:flex;

@@ -18,6 +18,7 @@ export default function ArithmeticBlaster() {
   const [tiles, setTiles] = useState([]);
   const animRef = useRef(null);
   const inputRef = useRef(null);
+  const animRunningRef = useRef(false);
 
   const operators = ["+", "-", "×", "÷"];
 
@@ -74,20 +75,19 @@ export default function ArithmeticBlaster() {
   }, []);
 
   const loseLife = useCallback(() => {
-    setLives((l) => {
+    stopFalling(); // ✅ immediately stop any leftover animation
+    setLives(l => {
       const newLives = l - 1;
       if (newLives <= 0) {
         setGameOver(true);
-        stopFalling();
       } else {
-        // Remove all tiles and generate new question
-        setTiles([]);
-        setTimeout(generateQuestion, 1000);
+        setTiles([]); // clear for next question
       }
       return newLives;
     });
     setCombo(0);
-  }, [generateQuestion, stopFalling]);
+  }, [stopFalling]);
+  
 
   const handleAnswerClick = (tile) => {
     if (gameOver) return;
@@ -170,66 +170,79 @@ export default function ArithmeticBlaster() {
     generateQuestion();
   };
 
+  useEffect(() => {
+    if (!gameOver && tiles.length === 0 && !animRunningRef.current) {
+      // slight delay to let old animation cleanup
+      const timeout = setTimeout(() => {
+        generateQuestion();
+        animRunningRef.current = true;
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [tiles, gameOver, generateQuestion]);
+  
   // Initialize game
   useEffect(() => {
     generateQuestion();
   }, []);
 
-  // Animation loop
-  useEffect(() => {
-    if (gameOver) return;
-    
-    let animationFrame;
-    let isMounted = true;
+// 🎯 Animation + round management
+// 🧩 Prevent double life losses due to React Strict Mode
+const timeOverRef = useRef(false);
 
-    const animate = () => {
-      if (!isMounted) return;
-      
-      setTiles(prevTiles => {
-        // If no tiles, generate new question
-        if (prevTiles.length === 0) {
-          generateQuestion();
-          return [];
+// 🎮 Animation loop and round logic
+useEffect(() => {
+  if (gameOver) return;
+
+  let frameId;
+  let stopped = false;
+
+  const animate = () => {
+    setTiles(prevTiles => {
+      if (prevTiles.length === 0) return prevTiles;
+
+      const updated = prevTiles.map(tile => {
+        const newY = tile.y + tile.speed;
+
+        // Check if the correct tile hit the ground
+        if (newY > 60 && tile.isCorrect && !timeOverRef.current) {
+          timeOverRef.current = true; // prevent multiple losses
+          loseLife();
+          return null;
         }
 
-        const updatedTiles = prevTiles.map(tile => {
-          if (!tile) return null;
-          
-          // Update position
-          const newY = tile.y + tile.speed;
-          
-          // Check if tile fell off screen
-          if (newY > 100) {
-            if (tile.isCorrect) {
-              loseLife();
-            }
-            return null;
-          }
-          
-          return { ...tile, y: newY };
-        }).filter(Boolean);
+        // Remove all tiles once they fall beyond the screen
+        if (newY > 110) return null;
 
-        return updatedTiles;
-      });
-      
-      if (isMounted) {
-        animationFrame = requestAnimationFrame(animate);
-      }
-    };
-    
-    animationFrame = requestAnimationFrame(animate);
-    
-    return () => {
-      isMounted = false;
-      if (animationFrame) {
-        cancelAnimationFrame(animationFrame);
-      }
-    };
-  }, [gameOver, generateQuestion, loseLife]);
+        return { ...tile, y: newY };
+      }).filter(Boolean);
 
-  useEffect(() => {
-    if (inputRef.current) inputRef.current.focus();
-  }, [question]);
+      return updated;
+    });
+
+    if (!stopped) frameId = requestAnimationFrame(animate);
+  };
+
+  frameId = requestAnimationFrame(animate);
+
+  return () => {
+    stopped = true;
+    cancelAnimationFrame(frameId);
+  };
+}, [gameOver, loseLife]);
+
+// 🧠 Watcher: when all tiles are gone, spawn a new question
+useEffect(() => {
+  if (!gameOver && tiles.length === 0) {
+    const timeout = setTimeout(() => {
+      timeOverRef.current = false; // reset protection for new round
+      generateQuestion();
+    }, 800); // small delay between rounds
+    return () => clearTimeout(timeout);
+  }
+}, [tiles, gameOver, generateQuestion]);
+
+
 
   return (
     <div className="ab-container">
@@ -270,7 +283,7 @@ export default function ArithmeticBlaster() {
                   }}
                   initial={{ y: 0, opacity: 0 }}
                   animate={{ 
-                    y: `${tile.y}%`,
+                    y: `${tile.y}vh`,
                     x: `${tile.x}%`,
                     opacity: tile.opacity !== undefined ? tile.opacity : 1,
                     scale: tile.opacity === 1 ? 1 : 0.8,
@@ -316,6 +329,7 @@ export default function ArithmeticBlaster() {
                 {combo} COMBO!
               </motion.div>
             )}
+            <div className="ab-ground" />
           </div>
 
           <div className="ab-status">

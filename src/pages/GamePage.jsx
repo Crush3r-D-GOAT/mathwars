@@ -24,7 +24,7 @@ export default function GamePage() {
     { id: 7, name: "Angle Rush", img: placeholder, route: "/angle-rush" },
     { id: 8, name: "Equation Blitz", img: placeholder, route: "/equation-blitz" },
     { id: 9, name: "Factor Frenzy", img: placeholder, route: "/factor-frenzy" },
-    { id: 10, name: "Coming Soon", img: placeholder, route: "#" },
+    { id: 10, name: "Slope Sprint", img: placeholder, route: "/slope-sprint" },
   ];
 
   const { user } = useAuth();

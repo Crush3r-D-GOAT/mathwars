@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/EquationBlitz.css";
+import { useAuth } from "../context/AuthContext";
+import { fetchHighScore, saveGameData } from "../api/client";
 
 export default function EquationBlitz() {
+  const { user } = useAuth();
+
+  // Strict-mode safe refs
+  const timerRef = useRef(null);
+  const timeOverRef = useRef(false);
+  const gameSavedRef = useRef(false);
+
   const [equation, setEquation] = useState("");
   const [answer, setAnswer] = useState(0);
   const [input, setInput] = useState("");
@@ -13,34 +22,52 @@ export default function EquationBlitz() {
   const [timeLeft, setTimeLeft] = useState(10);
   const [gameOver, setGameOver] = useState(false);
   const [attempts, setAttempts] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
 
-  const timerRef = useRef(null);
-  const timeOverRef = useRef(false); // ✅ Strict-mode safe flag
-
-  // 🎯 Generate random linear equation ax + b = c
-  const generateEquation = () => {
+  // 🎯 Generate equation
+  const generateEquationValue = () => {
     const a = Math.ceil(Math.random() * 9);
     const x = Math.ceil(Math.random() * 12);
     const b = Math.ceil(Math.random() * 15);
     const c = a * x + b;
-    if(a==1){
-        setEquation(`x + ${b} = ${c}`);
-    }
-    else{
-        setEquation(`${a}x + ${b} = ${c}`);
-    }
-    setAnswer(x);
+    const eq = a === 1 ? `x + ${b} = ${c}` : `${a}x + ${b} = ${c}`;
+    return { equation: eq, answer: x };
+  };
+
+  const generateEquation = () => {
+    const { equation: eq, answer: ans } = generateEquationValue();
+    setEquation(eq);
+    setAnswer(ans);
     setInput("");
     setFeedback("");
     setTimeLeft(10);
     timeOverRef.current = false;
   };
 
+  // Initialize first equation immediately
   useEffect(() => {
-    generateEquation();
+    const first = generateEquationValue();
+    setEquation(first.equation);
+    setAnswer(first.answer);
   }, []);
 
-  // ⏱ Timer logic
+  // Load high score on mount
+  useEffect(() => {
+    const loadHighScore = async () => {
+      if (user?.userid) {
+        try {
+          const savedHighScore = await fetchHighScore(user.userid, 8); // 8 = Equation Blitz
+          setHighScore(parseInt(savedHighScore) || 0);
+        } catch (err) {
+          console.error("Failed to load high score", err);
+        }
+      }
+    };
+    loadHighScore();
+  }, [user?.userid]);
+
+  // Timer
   useEffect(() => {
     if (gameOver) return;
     timeOverRef.current = false;
@@ -77,11 +104,18 @@ export default function EquationBlitz() {
     const userAns = Number(input);
     if (userAns === answer) {
       setFeedback("✅ Correct!");
-      setScore((s) => Math.floor(s + Math.min(Math.floor(s/2+5), s) * Math.pow(streak, 0.2)+1));
+      setScore((s) => {
+        const newScore = Math.floor(s + Math.min(Math.floor(s / 2 + 5), s) * Math.pow(streak, 0.2) + 1);
+        if (newScore > highScore) {
+          setHighScore(newScore);
+          setIsNewHighScore(true);
+        }
+        return newScore;
+      });
       setStreak((st) => st + 1);
       setTimeout(generateEquation, 800);
     } else {
-      setFeedback(` Nope — x = ${answer}`);
+      setFeedback(`❌ Nope — x = ${answer}`);
       loseLife();
     }
   };
@@ -91,15 +125,35 @@ export default function EquationBlitz() {
     const newLives = lives - 1;
     setLives(newLives);
     setAnimateLife(true);
-    
-    // Remove animation class after animation completes
+
     setTimeout(() => setAnimateLife(false), 1000);
-    
+
     if (newLives <= 0) {
       clearInterval(timerRef.current);
       setGameOver(true);
+      saveGame(score);
     } else {
       setTimeout(generateEquation, 900);
+    }
+  };
+
+  const saveGame = async (finalScore) => {
+    if (!user || gameSavedRef.current) return;
+
+    try {
+      const newHighScore = Math.max(highScore, finalScore);
+      const gameData = {
+        userid: user.userid,
+        gameid: 8,
+        score: finalScore,
+        highscore: newHighScore,
+        dateplayed: new Date().toISOString(),
+      };
+      await saveGameData(gameData);
+      gameSavedRef.current = true;
+      console.log("Equation Blitz data saved:", gameData);
+    } catch (err) {
+      console.error("Failed to save Equation Blitz game", err);
     }
   };
 
@@ -109,6 +163,8 @@ export default function EquationBlitz() {
     setStreak(0);
     setAttempts(0);
     setGameOver(false);
+    setIsNewHighScore(false);
+    gameSavedRef.current = false;
     generateEquation();
   };
 
@@ -117,9 +173,18 @@ export default function EquationBlitz() {
       <div className="eq-container game-over">
         <h1>💀 Game Over!</h1>
         <p>Final Score: {score}</p>
-        <button className="btn play-again" onClick={resetGame}>
-          Play Again
-        </button>
+        <p>High Score: {highScore} {isNewHighScore && "🎉 New!"}</p>
+        <div className="eq-game-over-buttons">
+          <button className="btn eq-play-again" onClick={resetGame}>
+            Play Again
+          </button>
+          <button
+            className="btn eq-main-menu"
+            onClick={() => window.location.href = '/'}
+          >
+            Back to Main Menu
+          </button>
+        </div>
       </div>
     );
   }
@@ -131,10 +196,9 @@ export default function EquationBlitz() {
         <div className="eq-stats">
           <span>⭐ {score}</span>
           <span>🔥 {streak}</span>
-          <span className={animateLife ? 'lose-life-animation' : ''}>
-            ❤️ {lives}
-          </span>
+          <span className={animateLife ? 'lose-life-animation' : ''}>❤️ {lives}</span>
           <span>⏱ {timeLeft}s</span>
+          <span>🏆 {highScore} {isNewHighScore && "🎉"}</span>
         </div>
       </header>
 
@@ -154,9 +218,7 @@ export default function EquationBlitz() {
           Submit
         </button>
 
-        <div
-          className={`eq-feedback ${feedback.startsWith("✅") ? "good" : "bad"}`}
-        >
+        <div className={`eq-feedback ${feedback.startsWith("✅") ? "good" : "bad"}`}>
           {feedback}
         </div>
       </main>

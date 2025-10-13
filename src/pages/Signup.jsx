@@ -15,6 +15,7 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [passwd, setPasswd] = useState("");
   const [cpasswd, setCpasswd] = useState("");
+  const [isDiagnostic, setIsDiagnostic] = useState(false);
   const [error, setError] = useState("");
 
   // Handle sign up button click
@@ -40,6 +41,7 @@ export default function Signup() {
         username,
         email,
         password: passwd,
+        isdiagnostic: isDiagnostic,
       };
 
       // Call the createUser API function from client.js
@@ -47,7 +49,7 @@ export default function Signup() {
 
       // On successful signup, navigate to the diagnostic page
       console.log("User successfully created!");
-      navigate("/diagnostic");
+      navigate("/game");
 
     } catch (apiError) {
       // Handle API errors
@@ -105,7 +107,15 @@ export default function Signup() {
             value={cpasswd}
             onChange={(e) => setCpasswd(e.target.value)}
           />
-          <button className="btn-primary" type="submit">
+          <button className="btn-primary" type="submit"
+          onClick={(e) => {
+            e.preventDefault(); // prevent immediate form submit
+            const wantsDiagnostic = window.confirm("Do you want to take the diagnostic test?");
+            console.log(wantsDiagnostic);
+            setIsDiagnostic(wantsDiagnostic);
+            handleSignup(e);
+          }}
+          >
             Sign Up
           </button>
         </form>
