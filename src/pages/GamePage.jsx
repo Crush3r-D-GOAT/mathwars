@@ -3,16 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import '../styles/game.css';
 import placeholder from '../assets/placeholder.png';
-import PiMemoryGame from "./PiMemoryGame";
 import SettingsButton from '../components/SettingsButton';
 import { useAuth } from '../context/AuthContext';
+import Swal from "sweetalert2";
+import { getDiagnosticStatus } from "../api/client";
 
 export default function GamePage() {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    console.log("GamePage rendering...");
-  }, []);
+  const { user } = useAuth();
 
   const games = [
     { id: 1, name: "2048", img: placeholder, route: "/2048" },
@@ -27,7 +25,42 @@ export default function GamePage() {
     { id: 10, name: "Slope Sprint", img: placeholder, route: "/slope-sprint" },
   ];
 
-  const { user } = useAuth();
+  useEffect(() => {
+    if (!user?.userid) return; // Don't run if user not loaded yet
+
+    const checkDiagnostic = async () => {
+      try {
+        const status = await getDiagnosticStatus(user.userid);
+        console.log("Diagnostic status:", status);
+
+        if (!status) {
+          const result = await Swal.fire({
+            title: "Diagnostic Test",
+            text: "Do you want to take the diagnostic test?",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Yes",
+            cancelButtonText: "No",
+          });
+
+          if (result.isConfirmed) {
+            Swal.fire({
+              title: "Diagnostic Enabled",
+              text: "You may now take the diagnostic test!",
+              icon: "success",
+              timer: 1500,
+              showConfirmButton: false,
+            });
+            navigate("/diagnostic");
+          }
+        }
+      } catch (error) {
+        console.error("Error handling diagnostic alert:", error);
+      }
+    };
+
+    checkDiagnostic();
+  }, [user, navigate]); // ✅ Run only when user changes
 
   return (
     <div className="game-page">

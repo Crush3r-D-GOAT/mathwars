@@ -142,3 +142,54 @@ export const login = async (username, password) => {
     throw new Error('Network error. Please check your connection.');
   }
 };
+
+/**
+ * Gets the diagnostic status for a user
+ * @param {number} userId - The user's ID
+ * @returns {Promise<boolean>} Whether the user has completed the diagnostic
+ */
+export const getDiagnosticStatus = async (userId) => {
+  try {
+    const response = await apiClient.get(`/api/users/${userId}/diagnostic`);
+    return response.data.isdiagnostic;
+  } catch (error) {
+    console.error('Error fetching diagnostic status:', error);
+    throw error;
+  }
+};
+
+/**
+ * Updates the diagnostic status for a user
+ * @param {number} userId - The user's ID
+ * @param {boolean} status - New diagnostic status
+ * @returns {Promise<Object>} Updated user object
+ */
+export const updateDiagnosticStatus = async (userId, status) => {
+  try {
+    const response = await apiClient.post(`/api/users/${userId}/diagnostic`, { isdiagnostic: status });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating diagnostic status:', error);
+    throw error;
+  }
+};
+
+
+/**
+ * Posts diagnostic results to the server
+ * @param {number} userId - The user ID
+ * @param {boolean[]} results - Array of booleans for each question (true if correct)
+ * @returns {Promise<Object>} The server response
+ */
+export const saveDiagnosticResults = async (userId, results) => {
+  try {
+    const response = await apiClient.post(`/api/users/${userId}/diagnostic/results`, {
+      results,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error saving diagnostic results:", error);
+    throw error;
+  }
+};
+

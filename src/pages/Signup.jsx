@@ -41,7 +41,7 @@ export default function Signup() {
         username,
         email,
         password: passwd,
-        isdiagnostic: isDiagnostic,
+        isdiagnostic: false,
       };
 
       // Call the createUser API function from client.js
@@ -107,15 +107,7 @@ export default function Signup() {
             value={cpasswd}
             onChange={(e) => setCpasswd(e.target.value)}
           />
-          <button className="btn-primary" type="submit"
-          onClick={(e) => {
-            e.preventDefault(); // prevent immediate form submit
-            const wantsDiagnostic = window.confirm("Do you want to take the diagnostic test?");
-            console.log(wantsDiagnostic);
-            setIsDiagnostic(wantsDiagnostic);
-            handleSignup(e);
-          }}
-          >
+          <button className="btn-primary" type="submit">
             Sign Up
           </button>
         </form>

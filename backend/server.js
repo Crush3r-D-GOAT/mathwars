@@ -46,6 +46,75 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// GET: Get a user's diagnostic status
+app.get('/api/users/:id/diagnostic', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'SELECT isdiagnostic FROM users WHERE userid = $1',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ isdiagnostic: result.rows[0].isdiagnostic });
+  } catch (error) {
+    console.error('Error fetching diagnostic status:', error);
+    res.status(500).json({ error: 'Failed to fetch diagnostic status' });
+  }
+});
+
+
+/**
+ * POST /api/users/:userId/diagnostic/results
+ * Body: { results: [true, false, true, ...] }
+ */
+router.post("/api/users/:userId/diagnostic/results", async (req, res) => {
+  const { userId } = req.params;
+  const { results } = req.body;
+
+  if (!Array.isArray(results) || results.length === 0) {
+    return res.status(400).json({ error: "Results must be a non-empty array." });
+  }
+
+  try {
+    // Prepare column list dynamically up to 20
+    const columns = results
+      .map((_, i) => `Q${i + 1}`)
+      .join(", ");
+
+    // Parameter placeholders for Q1–Qn and date
+    const values = results.map((r) => (r ? true : false));
+    const placeholders = values.map((_, i) => `$${i + 2}`).join(", ");
+
+    // Insert or update the user's diagnostic record
+    const query = `
+      INSERT INTO diagnostic (userID, ${columns}, dateAttempted)
+      VALUES ($1, ${placeholders}, CURRENT_DATE)
+      ON CONFLICT (userID)
+      DO UPDATE SET
+        ${results
+          .map((_, i) => `Q${i + 1} = EXCLUDED.Q${i + 1}`)
+          .join(", ")},
+        dateAttempted = CURRENT_DATE
+      RETURNING *;
+    `;
+
+    const result = await pool.query(query, [userId, ...values]);
+
+    res.json({
+      message: "Diagnostic results saved successfully.",
+      data: result.rows[0],
+    });
+  } catch (err) {
+    console.error("Error saving diagnostic results:", err);
+    res.status(500).json({ error: "Failed to save diagnostic results." });
+  }
+});
+
 // --- API Endpoints for the 'usergames' table ---
 
 // Get high score for a user and game
@@ -305,6 +374,55 @@ app.post('/login', async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
+
+// GET: Get a user's diagnostic status
+// app.get('/api/users/:id/diagnostic', async (req, res) => {
+//   const { id } = req.params;
+
+//   try {
+//     const result = await pool.query(
+//       'SELECT isdiagnostic FROM users WHERE userid = $1',
+//       [id]
+//     );
+
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ error: 'User not found' });
+//     }
+
+//     res.json({ isdiagnostic: result.rows[0].isdiagnostic });
+//   } catch (error) {
+//     console.error('Error fetching diagnostic status:', error);
+//     res.status(500).json({ error: 'Failed to fetch diagnostic status' });
+//   }
+// });
+
+// POST: Update a user's diagnostic status
+app.post('/api/users/:id/diagnostic', async (req, res) => {
+  const { id } = req.params;
+  const { isdiagnostic } = req.body;
+
+  if (typeof isdiagnostic !== 'boolean') {
+    return res.status(400).json({ error: 'Invalid isdiagnostic value' });
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE users SET isdiagnostic = $1 WHERE userid = $2 RETURNING userid, username, isdiagnostic',
+      [isdiagnostic, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    console.log(`Updated diagnostic status for user ${id} → ${isdiagnostic}`);
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error updating diagnostic status:', error);
+    res.status(500).json({ error: 'Failed to update diagnostic status' });
+  }
+});
+
 
 // Start the server
 app.listen(port, () => {
