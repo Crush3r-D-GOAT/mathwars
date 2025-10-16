@@ -38,31 +38,30 @@ export default function DiagnosticPage() {
     setSelected(choice);
   };
 
-const handleNext = async () => {
-  if (selected === null) return alert("Please select an answer!");
-
-  const isCorrect = selected === currentQ.answer;
-  setResults((prev) => [...prev, isCorrect]);
-  if (isCorrect) setScore(score + 1);
-
-  if (current + 1 < questions.length) {
-    setCurrent(current + 1);
-    setSelected(null);
-  } else {
-    // Finished all questions
-    setFinished(true);
-    try {
-      await saveDiagnosticResults(user?.userid, [...results, isCorrect]);
-    } catch (err) {
-      console.error("Failed to save diagnostic:", err);
+  const handleNext = async () => {
+    if (selected === null) return alert("Please select an answer!");
+  
+    const isCorrect = selected === currentQ.answer;
+    const updatedResults = [...results, isCorrect];
+  
+    setResults(updatedResults);
+    if (isCorrect) setScore(score + 1);
+  
+    if (current + 1 < questions.length) {
+      setCurrent(current + 1);
+      setSelected(null);
+    } else {
+      setFinished(true);
+      try {
+        console.log("Saving results for user:", user?.userid);
+        await saveDiagnosticResults(user?.userid, updatedResults);
+        await updateDiagnosticStatus(user?.userid, true);
+      } catch (err) {
+        console.error("Error during diagnostic submission:", err);
+      }
     }
-    try {
-      await updateDiagnosticStatus(user?.userid, true);
-    } catch (err) {
-      console.error("Failed to update diagnostic status:", err);
-    }
-  }
-};
+  };
+    
 
   const handleRestart = () => {
     navigate("/game");

@@ -178,18 +178,22 @@ export const updateDiagnosticStatus = async (userId, status) => {
 /**
  * Posts diagnostic results to the server
  * @param {number} userId - The user ID
- * @param {boolean[]} results - Array of booleans for each question (true if correct)
+ * @param {boolean[]} resultsArray - Array of booleans for each question (true if correct)
  * @returns {Promise<Object>} The server response
  */
-export const saveDiagnosticResults = async (userId, results) => {
+export async function saveDiagnosticResults(userid, results) {
+  console.log("Request:", `POST /api/users/${userid}/diagnostic/results`);
+  console.log("Payload being sent:", { results });
+
   try {
-    const response = await apiClient.post(`/api/users/${userId}/diagnostic/results`, {
-      results,
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Error saving diagnostic results:", error);
-    throw error;
+    const res = await apiClient.post(`/api/users/${userid}/diagnostic/results`, {results});
+    console.log("Response:", res);
+    return res;
+  } catch (err) {
+    console.error("Error saving diagnostic results:", err.response?.data || err);
+    throw err;
   }
-};
+}
+
+
 

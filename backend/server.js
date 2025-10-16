@@ -5,6 +5,7 @@ const { Pool } = require('pg');
 const cors = require('cors');
 
 const app = express();
+app.use(express.json()); // For parsing application/json
 const port = process.env.PORT || 3002;
 
 // CORS configuration
@@ -39,7 +40,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json()); // For parsing application/json
+
 
 // Create a PostgreSQL connection pool using the environment variable.
 const pool = new Pool({
@@ -72,39 +73,49 @@ app.get('/api/users/:id/diagnostic', async (req, res) => {
  * POST /api/users/:userId/diagnostic/results
  * Body: { results: [true, false, true, ...] }
  */
-router.post("/api/users/:userId/diagnostic/results", async (req, res) => {
-  const { userId } = req.params;
-  const { results } = req.body;
 
+app.post("/api/users/:userid/diagnostic/results", async (req, res) => {
+  const { userid } = req.params;
+  const { results : results } = req.body;
+
+  console.log("Received userID:", userid);
+  console.log("Received request::", req );
+  console.log("Received Results:", results);
+
+
+  // ✅ Validate payload
   if (!Array.isArray(results) || results.length === 0) {
     return res.status(400).json({ error: "Results must be a non-empty array." });
   }
 
+  // ✅ Limit to 20 columns to match DB schema
+  const safeResults = results.slice(0, 20);
+
+  const columns = safeResults.map((_, i) => `q${i + 1}`).join(", ");
+  const values = safeResults.map((r) => !!r); // force boolean true/false
+  const placeholders = values.map((_, i) => `$${i + 2}`).join(", ");
+
+  // ✅ Build UPDATE SET safely
+  const updateSet =
+    safeResults.length > 0
+      ? safeResults.map((_, i) => `q${i + 1} = EXCLUDED.q${i + 1}`).join(", ")
+      : "";
+
+  // ✅ Final query
+  const query = `
+    INSERT INTO diagnosticscores (userid, ${columns}, dateAttempted)
+    VALUES ($1, ${placeholders}, CURRENT_DATE)
+    ON CONFLICT (userID)
+    DO UPDATE SET
+      ${updateSet ? updateSet + "," : ""} dateAttempted = CURRENT_DATE
+    RETURNING *;
+  `;
+
+  console.log("SQL Query:\n", query);
+  console.log("Values array:", [userid, ...values]);
+
   try {
-    // Prepare column list dynamically up to 20
-    const columns = results
-      .map((_, i) => `Q${i + 1}`)
-      .join(", ");
-
-    // Parameter placeholders for Q1–Qn and date
-    const values = results.map((r) => (r ? true : false));
-    const placeholders = values.map((_, i) => `$${i + 2}`).join(", ");
-
-    // Insert or update the user's diagnostic record
-    const query = `
-      INSERT INTO diagnostic (userID, ${columns}, dateAttempted)
-      VALUES ($1, ${placeholders}, CURRENT_DATE)
-      ON CONFLICT (userID)
-      DO UPDATE SET
-        ${results
-          .map((_, i) => `Q${i + 1} = EXCLUDED.Q${i + 1}`)
-          .join(", ")},
-        dateAttempted = CURRENT_DATE
-      RETURNING *;
-    `;
-
-    const result = await pool.query(query, [userId, ...values]);
-
+    const result = await pool.query(query, [userid, ...values]);
     res.json({
       message: "Diagnostic results saved successfully.",
       data: result.rows[0],
