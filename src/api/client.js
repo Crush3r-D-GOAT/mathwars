@@ -197,3 +197,60 @@ export async function saveDiagnosticResults(userid, results) {
 
 
 
+/**
+ * 🔹 Fetch the user's highest cumulative highscore across ALL games.
+ * @param {number|string} userId - The user's ID.
+ * @returns {Promise<number>} The user's highest recorded highscore (or 0 if none).
+ */
+export const fetchUserHighestScore = async (userId) => {
+  try {
+    const response = await apiClient.get(`/api/user/${userId}/highscore`);
+    return response.data.highestScore || 0;
+  } catch (error) {
+    console.error("Error fetching user highest score:", error);
+    return 0;
+  }
+};
+
+/**
+ * 🔹 Fetch total number of games played by a user (including repeats)
+ * @param {number|string} userId - The user's ID
+ * @returns {Promise<number>} - Total number of games played
+ */
+export const fetchUserGameCount = async (userId) => {
+  try {
+    const response = await apiClient.get(`/api/user/${userId}/gamecount`);
+    return response.data.totalGames || 0;
+  } catch (error) {
+    console.error("Error fetching total games played:", error);
+    return 0;
+  }
+};
+
+// Fetch all user scores from usergames table
+export async function fetchAllScores(userId) {
+  try {
+    const response = await fetch(`http://localhost:3002/api/usergames/${userId}/scores`);
+    if (!response.ok) throw new Error("Failed to fetch scores");
+    const data = await response.json();
+    return data.scores; // returns an array like [500, 750, 900, 1100, ...]
+  } catch (error) {
+    console.error("Error fetching scores:", error);
+    return [];
+  }
+}
+
+export async function fetchUserGameScores(userId, gameId) {
+  try {
+    const response = await fetch(`http://localhost:3002/api/usergames/${userId}/${gameId}/scores`);
+    if (!response.ok) throw new Error("Failed to fetch scores");
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching user game scores:", error);
+    return [];
+  }
+}
+
+
+
+

@@ -1,12 +1,10 @@
-.settings-button {
+/* Game Page Settings Button */
+.game-settings-button {
   position: absolute;
   top: -80px;
   right: 0;
   z-index: 1000;
-}
-
-.settings-button {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(30, 30, 30, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   width: 48px;
@@ -20,12 +18,25 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.settings-button:hover {
+.game-settings-button:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: rotate(30deg);
 }
 
-.settings-icon {
-  color: white;
+.game-settings-button .settings-icon {
+  color: #fff;
   font-size: 1.25rem;
+  transition: color 0.3s ease;
+}
+
+/* Profile Page Settings Button */
+.profile-page .action-btn {
+  /* Ensure profile page settings button styles are not overridden */
+  background: rgba(30, 30, 30, 0.8);
+  color: #fff;
+}
+
+.profile-page .action-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
 }

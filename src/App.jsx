@@ -9,6 +9,8 @@ import SignupPage from './pages/Signup';
 import GamePage from './pages/GamePage';
 import DiagnosticPage from './pages/DiagnosticPage';
 import SettingsPage from './pages/SettingsPage';
+import ProfilePage from './pages/ProfilePage';
+import StatsPage from './pages/StatsPage';
 // Games
 import Game2048 from './pages/Game2048';
 import ArithmeticBlaster from './pages/ArithmeticBlaster';
@@ -99,8 +101,8 @@ const AppContent = () => {
         {/* Protected routes */}
         <Route path="/game" element={user ? <GamePage /> : <Navigate to="/login" state={{ from: '/game' }} replace />} />
         <Route path="/challenges" element={user ? <div className="page">Challenges Page</div> : <Navigate to="/login" state={{ from: '/challenges' }} replace />} />
-        <Route path="/profile" element={user ? <div className="page">Profile Page</div> : <Navigate to="/login" state={{ from: '/profile' }} replace />} />
-        <Route path="/stats" element={user ? <div className="page">Stats Page</div> : <Navigate to="/login" state={{ from: '/stats' }} replace />} />
+        <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" state={{ from: '/profile' }} replace />} />
+        <Route path="/stats" element={user ? <StatsPage /> : <Navigate to="/login" state={{ from: '/stats' }} replace />} />
         <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/login" state={{ from: '/settings' }} replace />} />
         <Route path="/diagnostic" element={user ? <DiagnosticPage /> : <Navigate to="/login" state={{ from: '/diagnostic' }} replace />} />
         <Route path="/2048" element={user ? <Game2048 /> : <Navigate to="/login" state={{ from: '/2048' }} replace />} />

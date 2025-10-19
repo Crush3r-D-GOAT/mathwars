@@ -267,29 +267,79 @@ function getRandomInt(min, max) {
   
   // ---------- 7. Factors (3 questions) ----------
   function generateFactorQuestions() {
-    return Array.from({ length: 3 }, () => {
-      const n = getRandomInt(20, 60);
-      const correct = getRandomInt(2, 10);
-      const isFactor = n % correct === 0;
+    const questions = [];
+  
+    for (let i = 0; i < 3; i++) {
+      // Step 1: Pick a number that’s not too small and has enough factors
+      let n;
+      let factors = [];
+      do {
+        n = getRandomInt(20, 100); // larger range
+        factors = getFactors(n);
+      } while (factors.length < 4); // ensure enough factors for multi-choice
+  
+      // Step 2: Randomly decide if question asks for a factor or NOT a factor
+      const askIsFactor = Math.random() < 0.5; // 50/50 chance
   
       const numChoices = getRandomInt(4, 5);
-      const choicesSet = new Set([correct]);
-      
-      let guard = 0;
-      while (choicesSet.size < numChoices && guard < 50) {
-        const candidate = getRandomInt(2, 10);
-        if (!choicesSet.has(candidate)) choicesSet.add(candidate);
-        guard++;
+      const choicesSet = new Set();
+  
+      let correct;
+  
+      if (askIsFactor) {
+        // ✅ “Which IS a factor of n?”
+        correct = randomChoice(factors.filter(f => f !== n)); // avoid n itself
+        choicesSet.add(correct);
+  
+        // add non-factors as incorrect answers
+        while (choicesSet.size < numChoices) {
+          const candidate = getRandomInt(2, 25);
+          if (n % candidate !== 0) choicesSet.add(candidate);
+        }
+  
+      } else {
+        // ✅ “Which is NOT a factor of n?”
+        // ensure n is not prime (already guaranteed above)
+        const nonFactors = [];
+        for (let x = 2; x <= 25; x++) {
+          if (n % x !== 0) nonFactors.push(x);
+        }
+  
+        correct = randomChoice(nonFactors);
+        choicesSet.add(correct);
+  
+        // add actual factors as incorrect answers
+        while (choicesSet.size < numChoices) {
+          const candidate = randomChoice(factors);
+          choicesSet.add(candidate);
+        }
       }
   
-      return {
+      const questionText = `Which of the following is ${askIsFactor ? "" : "not "}a factor of ${n}?`;
+  
+      questions.push({
         type: "factor",
-        question: `Which of the following is ${isFactor ? "" : "not "}a factor of ${n}?`,
+        question: questionText,
         choices: Array.from(choicesSet).sort(() => Math.random() - 0.5),
         answer: correct,
-      };
-    });
+      });
+    }
+  
+    return questions;
   }
+  
+  function getFactors(n) {
+    const factors = [];
+    for (let i = 2; i <= Math.floor(n / 2); i++) {
+      if (n % i === 0) factors.push(i);
+    }
+    return factors;
+  }
+  
+  function randomChoice(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+  
   
   // ---------- Combine All ----------
   export function generateDiagnosticQuestions() {

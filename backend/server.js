@@ -126,6 +126,64 @@ app.post("/api/users/:userid/diagnostic/results", async (req, res) => {
   }
 });
 
+// GET: Get a user's overall highest highscore across all games
+app.get('/api/user/:userid/highscore', async (req, res) => {
+  const { userid } = req.params;
+
+  if (!userid) {
+    return res.status(400).json({ error: 'Missing userid' });
+  }
+
+  try {
+    // Find the single highest highscore across ALL games for this user
+    const result = await pool.query(
+      `SELECT MAX(highscore) AS highest_overall
+       FROM usergames
+       WHERE userid = $1`,
+      [userid]
+    );
+
+    // Extract the highest score or default to 0
+    const highestScore = result.rows[0]?.highest_overall || 0;
+
+    console.log(`Highest overall highscore for user ${userid}:`, highestScore);
+
+    // Return it as a JSON object
+    res.json({ highestScore });
+  } catch (err) {
+    console.error('Error fetching user highscore:', err);
+    res.status(500).json({ error: 'Failed to fetch user highscore' });
+  }
+});
+
+// ✅ GET: Get total number of games a user has played (all sessions)
+app.get('/api/user/:userid/gamecount', async (req, res) => {
+  const { userid } = req.params;
+
+  if (!userid) {
+    return res.status(400).json({ error: 'Missing userid' });
+  }
+
+  try {
+    // Count *all* rows in usergames for that user (not distinct)
+    const result = await pool.query(
+      `SELECT COUNT(*) AS total_games
+       FROM usergames
+       WHERE userid = $1`,
+      [userid]
+    );
+
+    const totalGames = parseInt(result.rows[0]?.total_games || 0, 10);
+
+    console.log(`Total games played by user ${userid}:`, totalGames);
+    res.json({ totalGames });
+  } catch (err) {
+    console.error('Error fetching game count:', err);
+    res.status(500).json({ error: 'Failed to fetch total games played' });
+  }
+});
+
+
 // --- API Endpoints for the 'usergames' table ---
 
 // Get high score for a user and game
@@ -156,6 +214,42 @@ app.get('/api/usergames/highscore', async (req, res) => {
     });
   }
 });
+
+
+// Get all scores for a specific user
+app.get("/api/usergames/:userid/scores", async (req, res) => {
+  const { userid } = req.params;
+
+  try {
+    const result = await pool.query(
+      "SELECT score FROM usergames WHERE userid = $1 ORDER BY usergameid ASC",
+      [userid]
+    );
+    const scores = result.rows.map(row => row.score);
+    res.json({ scores });
+  } catch (error) {
+    console.error("Error fetching user game scores:", error);
+    res.status(500).json({ error: "Failed to fetch user scores" });
+  }
+});
+
+// GET all scores for a specific user and specific game
+app.get("/api/usergames/:userid/:gameid/scores", async (req, res) => {
+  const { userid, gameid } = req.params;
+
+  try {
+    const result = await pool.query(
+      "SELECT score FROM usergames WHERE userid = $1 AND gameid = $2 ORDER BY usergameid ASC",
+      [userid, gameid]
+    );
+
+    res.json(result.rows.map(row => row.score)); // return as array of scores
+  } catch (error) {
+    console.error("Error fetching user game scores:", error);
+    res.status(500).json({ error: "Failed to fetch user game scores" });
+  }
+});
+
 
 // Save game data
 app.post('/api/usergames', async (req, res) => {
@@ -434,12 +528,13 @@ app.post('/api/users/:id/diagnostic', async (req, res) => {
   }
 });
 
+app.get('/', (req, res) => {
+  res.send('Welcome to the User API!');
+});
 
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
-app.get('/', (req, res) => {
-    res.send('Welcome to the User API!');
-});
+
