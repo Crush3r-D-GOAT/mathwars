@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
+const { getRecommendations, challengeCache } = require('./recommendation');
 
 const app = express();
 app.use(express.json()); // For parsing application/json
@@ -480,26 +481,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// GET: Get a user's diagnostic status
-// app.get('/api/users/:id/diagnostic', async (req, res) => {
-//   const { id } = req.params;
-
-//   try {
-//     const result = await pool.query(
-//       'SELECT isdiagnostic FROM users WHERE userid = $1',
-//       [id]
-//     );
-
-//     if (result.rows.length === 0) {
-//       return res.status(404).json({ error: 'User not found' });
-//     }
-
-//     res.json({ isdiagnostic: result.rows[0].isdiagnostic });
-//   } catch (error) {
-//     console.error('Error fetching diagnostic status:', error);
-//     res.status(500).json({ error: 'Failed to fetch diagnostic status' });
-//   }
-// });
 
 // POST: Update a user's diagnostic status
 app.post('/api/users/:id/diagnostic', async (req, res) => {
@@ -524,7 +505,142 @@ app.post('/api/users/:id/diagnostic', async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating diagnostic status:', error);
-    res.status(500).json({ error: 'Failed to update diagnostic status' });
+    res.status(500).json({ error: 'Failed to update diagnostic status', details: error.message });
+  }
+});
+
+// Combined test endpoint for all challenge types
+app.get('/api/test/challenges/:userId', async (req, res) => {
+  console.log('=== Starting challenge generation ===');
+  try {
+    const { userId } = req.params;
+    const { date } = req.query; // Optional: YYYY-MM-DD format
+    
+    console.log(`Request received - User ID: ${userId}, Date: ${date || 'current'}`);
+    
+    // Store original Date object
+    const OriginalDate = global.Date;
+    
+    // Override Date if specific date is provided for testing
+    if (date) {
+      console.log(`Overriding system date to: ${date}`);
+      global.Date = class extends OriginalDate {
+        constructor() {
+          super(date);
+        }
+        static now() {
+          return new OriginalDate(date).getTime();
+        }
+      };
+    }
+    
+    // Import date utilities from recommendation.js
+    const { dateUtils } = require('./recommendation');
+    
+    // Get current time (or test time)
+    const now = date ? new Date(date) : new Date();
+    const today = dateUtils.getStartOfDay(now);
+    const weekStart = dateUtils.getStartOfWeek(now);
+    const biweekStart = dateUtils.getStartOfBiweek(now);
+    
+    console.log('Date Information:', {
+      now: now.toISOString(),
+      today: today.toISOString(),
+      weekStart: weekStart.toISOString(),
+      biweekStart: biweekStart.toISOString()
+    });
+    
+    console.log('Current cache state:', {
+      daily: challengeCache.daily,
+      weekly: challengeCache.weekly,
+      biweekly: challengeCache.biweekly
+    });
+    
+    // Determine which challenges to generate
+    const dailyLastUpdated = challengeCache.daily.lastUpdated ? new Date(challengeCache.daily.lastUpdated) : null;
+    const weeklyLastUpdated = challengeCache.weekly.lastUpdated ? new Date(challengeCache.weekly.lastUpdated) : null;
+    const biweeklyLastUpdated = challengeCache.biweekly.lastUpdated ? new Date(challengeCache.biweekly.lastUpdated) : null;
+    
+    const shouldGenerateDaily = !dailyLastUpdated || dailyLastUpdated < today;
+    const shouldGenerateWeekly = !weeklyLastUpdated || weeklyLastUpdated < weekStart;
+    const shouldGenerateBiweekly = !biweeklyLastUpdated || biweeklyLastUpdated < biweekStart;
+    
+    console.log('Should generate challenges:', {
+      daily: shouldGenerateDaily,
+      weekly: shouldGenerateWeekly,
+      biweekly: shouldGenerateBiweekly,
+      dailyLastUpdated: dailyLastUpdated?.toISOString(),
+      weeklyLastUpdated: weeklyLastUpdated?.toISOString(),
+      biweeklyLastUpdated: biweeklyLastUpdated?.toISOString()
+    });
+    
+    // Clear caches for challenges that need regeneration
+    if (shouldGenerateDaily) {
+      console.log('Clearing daily challenge cache');
+      challengeCache.daily = { lastUpdated: null };
+    }
+    if (shouldGenerateWeekly) {
+      console.log('Clearing weekly challenge cache');
+      challengeCache.weekly = { lastUpdated: null };
+    }
+    if (shouldGenerateBiweekly) {
+      console.log('Clearing biweekly challenge cache');
+      challengeCache.biweekly = { lastUpdated: null };
+    }
+    
+    // Generate challenges
+    const result = await getRecommendations(userId);
+    
+    // Get all challenges
+    const { rows: allChallenges } = await pool.query(
+      `SELECT ac.*, g.gname as game_name, 
+              CASE 
+                WHEN ac.category_id = 1 THEN 'daily'
+                WHEN ac.category_id = 2 THEN 'weekly'
+                WHEN ac.category_id = 3 THEN 'biweekly'
+                ELSE 'unknown'
+              END as challenge_type
+       FROM active_challenges ac
+       LEFT JOIN games g ON ac.gameid = g.gameid
+       WHERE ac.userid = $1
+       ORDER BY ac.category_id, ac.created_at DESC`,
+      [userId]
+    );
+    
+    // Group challenges by type
+    const challenges = {
+      daily: allChallenges.filter(c => c.challenge_type === 'daily'),
+      weekly: allChallenges.filter(c => c.challenge_type === 'weekly'),
+      biweekly: allChallenges.filter(c => c.challenge_type === 'biweekly')
+    };
+    
+    // Restore original Date
+    if (date) {
+      global.Date = OriginalDate;
+    }
+    
+    res.json({
+      message: `Challenges generated for ${date || 'current period'}`,
+      dateUsed: date || new Date().toISOString(),
+      generated: {
+        daily: shouldGenerateDaily,
+        weekly: shouldGenerateWeekly,
+        biweekly: shouldGenerateBiweekly
+      },
+      challenges,
+      cache: {
+        daily: challengeCache.daily,
+        weekly: challengeCache.weekly,
+        biweekly: challengeCache.biweekly
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error generating challenges:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate challenges',
+      details: error.message 
+    });
   }
 });
 
@@ -536,5 +652,3 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
-
-

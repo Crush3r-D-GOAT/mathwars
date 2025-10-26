@@ -251,6 +251,18 @@ export async function fetchUserGameScores(userId, gameId) {
   }
 }
 
-
-
-
+/**
+ * Fetches game recommendations for a specific user
+ * @param {number|string} userId - The ID of the user
+ * @returns {Promise<Array>} A promise that resolves to an array of recommended game objects
+ */
+export async function getRecommendations(userId) {
+  try {
+    const response = await fetch(`http://localhost:3002/api/recommendations/${userId}`);
+    if (!response.ok) throw new Error("Failed to fetch recommendations");
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching recommendations:", error);
+    return [];
+  }
+}
