@@ -2,7 +2,16 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import '../styles/game.css';
-import placeholder from '../assets/placeholder.png';
+import game2048Icon from '../assets/2048_icon.png';
+import gameArithmeticBlasterIcon from '../assets/ArithmeticBlaster_icon.png';
+import gameFractionMatchIcon from '../assets/FractionMatch_icon.png';
+import gameGeometryAreaChallengeIcon from '../assets/GeometryArea_icon.png';
+import gamePiMemoryGameIcon from '../assets/PiMemory_icon.png';
+import gamePrimeOrNotIcon from '../assets/PrimeOrNot_icon.png';
+import gameAngleRushIcon from '../assets/AngleRush_icon.png';
+import gameEquationBlitzIcon from '../assets/EquationBlitz_icon.png';
+import gameFactorFrenzyIcon from '../assets/FactorFrenzy_icon.png';
+import gameSlopeSprintIcon from '../assets/SlopeSprint__icon.png';
 import SettingsButton from '../components/SettingsButton';
 import { useAuth } from '../context/AuthContext';
 import Swal from "sweetalert2";
@@ -13,20 +22,20 @@ export default function GamePage() {
   const { user } = useAuth();
 
   const games = [
-    { id: 1, name: "2048", img: placeholder, route: "/2048" },
-    { id: 2, name: "Arithmetic Blaster", img: placeholder, route: "/arithmetic-blaster" },
-    { id: 3, name: "Fraction Match", img: placeholder, route: "/fraction-match" },
-    { id: 4, name: "Geometry Area Challenge", img: placeholder, route: "/geometry-area" },
-    { id: 5, name: "Pi Memory Game", img: placeholder, route: "/pi-memory" },
-    { id: 6, name: "Prime or Not", img: placeholder, route: "/prime-or-not" },
-    { id: 7, name: "Angle Rush", img: placeholder, route: "/angle-rush" },
-    { id: 8, name: "Equation Blitz", img: placeholder, route: "/equation-blitz" },
-    { id: 9, name: "Factor Frenzy", img: placeholder, route: "/factor-frenzy" },
-    { id: 10, name: "Slope Sprint", img: placeholder, route: "/slope-sprint" },
+    { id: 1, name: "2048", img: game2048Icon, route: "/2048" },
+    { id: 2, name: "Arithmetic Blaster", img: gameArithmeticBlasterIcon, route: "/arithmetic-blaster" },
+    { id: 3, name: "Fraction Match", img: gameFractionMatchIcon, route: "/fraction-match" },
+    { id: 4, name: "Geometry Area Challenge", img: gameGeometryAreaChallengeIcon, route: "/geometry-area" },
+    { id: 5, name: "Pi Memory Game", img: gamePiMemoryGameIcon, route: "/pi-memory" },
+    { id: 6, name: "Prime or Not", img: gamePrimeOrNotIcon, route: "/prime-or-not" },
+    { id: 7, name: "Angle Rush", img: gameAngleRushIcon, route: "/angle-rush" },
+    { id: 8, name: "Equation Blitz", img: gameEquationBlitzIcon, route: "/equation-blitz" },
+    { id: 9, name: "Factor Frenzy", img: gameFactorFrenzyIcon, route: "/factor-frenzy" },
+    { id: 10, name: "Slope Sprint", img: gameSlopeSprintIcon, route: "/slope-sprint" },
   ];
 
   useEffect(() => {
-    if (!user?.userid) return; // Don't run if user not loaded yet
+    if (!user?.userid) return;
 
     const checkDiagnostic = async () => {
       try {

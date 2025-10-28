@@ -82,6 +82,48 @@
   box-shadow: 0 4px 15px rgba(68, 170, 255, 0.6) !important;
 }
 
+/* Game Action Buttons */
+.action-btn {
+  padding: 0.8rem 2rem;
+  font-size: 1.1rem;
+  color: #fff;
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  border: 1px solid #ff2d2d;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 0 #990000, 0 0 10px rgba(255, 45, 45, 0.5);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #990000, 0 0 15px rgba(255, 45, 45, 0.8);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 0 #990000, 0 0 10px rgba(255, 45, 45, 0.5);
+}
+
+.keep-playing-btn {
+  margin-left: 10px;
+  box-shadow: 0 0 10px rgba(255, 45, 45, 0.3) !important;
+}
+
+.keep-playing-btn:hover {
+  background: linear-gradient(145deg, #333, #222);
+  box-shadow: 0 0 15px rgba(255, 45, 45, 0.5) !important;
+}
+
+.keep-playing-btn:active {
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  box-shadow: 0 0 10px rgba(255, 45, 45, 0.3) !important;
+}
+
 .score-label {
   font-size: 0.8rem;
   text-transform: uppercase;

@@ -1,4 +1,3 @@
-// src/components/GeometryAreaChallenge.jsx
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/GeometryAreaChallenge.css";
 import { useAuth } from "../context/AuthContext";
@@ -19,6 +18,8 @@ export default function GeometryAreaChallenge() {
   const [level, setLevel] = useState(1);
   const [streak, setStreak] = useState(0);
   const [gameSaved, setGameSaved] = useState(false);
+  const [areasEntered, setAreasEntered] = useState(0);
+  const maxStreakRef = useRef(0);
 
   const intervalRef = useRef(null);
   const handlingRef = useRef(false);
@@ -28,12 +29,11 @@ export default function GeometryAreaChallenge() {
 
   const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-  // Load high score on mount
   useEffect(() => {
     const loadHighScore = async () => {
       if (user?.userid) {
         try {
-          const savedHighScore = await fetchHighScore(user.userid, 4); // Game ID 4
+          const savedHighScore = await fetchHighScore(user.userid, 4);
           setHighScore(parseInt(savedHighScore) || 0);
         } catch (err) {
           console.error("Failed to load high score", err);
@@ -117,23 +117,28 @@ export default function GeometryAreaChallenge() {
     if (diff <= 0.5) {
       const newStreak = streak + 1;
       setStreak(newStreak);
+      maxStreakRef.current = Math.max(maxStreakRef.current, newStreak);
+      
+      if (shape === 'trapezoid' || shape === 'rhombus') {
+        setAreasEntered(prev => prev + 1);
+      }
 
       const pointsEarned = newStreak * Math.pow(2, level - 1);
 
       setScore((s) => {
         const newScore = s + pointsEarned;
-        if (newScore > highScore) setHighScore(newScore); // ✅ live update
+        if (newScore > highScore) setHighScore(newScore); 
         return newScore;
       });
 
-      setFeedback(`✅ +${pointsEarned} points! (Streak: ${newStreak})`);
+      setFeedback(` +${pointsEarned} points! (Streak: ${newStreak})`);
 
       if (newStreak % 5 === 0) setLevel((lvl) => lvl + 1);
 
       clearTimeout(nextTimeoutRef.current);
       nextTimeoutRef.current = setTimeout(() => generateShape(), 300);
     } else {
-      setFeedback(`❌ Wrong! (Answer: ${correctArea.toFixed(2)})`);
+      setFeedback(` Wrong! (Answer: ${correctArea.toFixed(2)})`);
       setStreak(0);
       loseLife();
     }
@@ -141,6 +146,17 @@ export default function GeometryAreaChallenge() {
 
   const saveGame = async () => {
     if (!user || gameSaved) return;
+    
+    const metrics = {
+      score,
+      streak: maxStreakRef.current,
+      scoreOver1000: score > 1000,
+      streakOver10: maxStreakRef.current >= 10,
+      areas_entered: areasEntered,
+      areas_over_5: areasEntered >= 5
+    };
+    console.log('Game metrics:', metrics);
+    
     try {
       const gameData = {
         userid: user.userid,

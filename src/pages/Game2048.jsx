@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { saveGameData, fetchHighScore } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { submitGameResult, getDefaultGameMetrics } from '../utils/gameUtils';
 import '../styles/2048.css';
 
 const Game2048 = () => {
@@ -17,6 +18,68 @@ const Game2048 = () => {
   const [keepPlaying, setKeepPlaying] = useState(false);
   const [gameSaved, setGameSaved] = useState(false);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(1);
+  const [highestTile, setHighestTile] = useState(2);
+  const [achievedTiles, setAchievedTiles] = useState(new Set([2]));
+  const [moveCount, setMoveCount] = useState(0);
+  const [achievements, setAchievements] = useState({
+    scoreOver1000: false,
+    streakOver10: false,
+    tile256Generated: false
+  });
+  
+  const getFibonacciNumber = (n) => {
+    if (n <= 1) return 1;
+    let a = 1, b = 1, temp;
+    for (let i = 2; i <= n; i++) {
+      temp = a + b;
+      a = b;
+      b = temp;
+    }
+    return b;
+  };
+  
+  const updateHighestTile = (tileValue) => {
+    if (tileValue > highestTile) {
+      setHighestTile(tileValue);
+      
+      // Update achieved tiles set
+      setAchievedTiles(prev => {
+        const newSet = new Set(prev);
+        newSet.add(tileValue);
+        
+        // Only update streak if this is a new power of 2 tile
+        if (Math.log2(tileValue) % 1 === 0) { // Check if tileValue is a power of 2
+          // Calculate Fibonacci sequence position (log2(tileValue) - 1 since we start at 2^1)
+          const fibPosition = Math.log2(tileValue);
+          
+          // Calculate Fibonacci number at this position
+          const fibNumber = getFibonacciNumber(fibPosition);
+          
+          // Update the streak
+          setCurrentStreak(fibNumber);
+          
+          // Check for streak achievement
+          if (fibNumber > 10 && !achievements.streakOver10) {
+            setAchievements(prev => ({
+              ...prev,
+              streakOver10: true
+            }));
+          }
+        }
+        
+        return newSet;
+      });
+      
+      // Check for 256 tile achievement
+      if (tileValue === 256 && !achievements.tile256Generated) {
+        setAchievements(prev => ({
+          ...prev,
+          tile256Generated: true
+        }));
+      }
+    }
+  };
 
   // Fetch high score when component mounts or user changes
   useEffect(() => {
@@ -37,20 +100,40 @@ const Game2048 = () => {
     loadHighScore();
   }, [user?.userid]);
 
-  // Initialize the game
+  // Log game metrics in the specified format
+  const logGameMetrics = () => {
+    const metrics = {
+      score,
+      streak: currentStreak,
+      scoreOver1000: achievements.scoreOver1000,
+      streakOver10: achievements.streakOver10,
+      moves: moveCount,
+      reached256Tile: achievements.tile256Generated
+    };
+    console.log(JSON.stringify(metrics, null, 2));
+  };
+
   const initGame = useCallback(() => {
     const newGrid = Array(4).fill().map(() => Array(4).fill(0));
     addNewTile(newGrid);
     addNewTile(newGrid);
     setGrid(newGrid);
     setScore(0);
+    setMoveCount(0); // Reset move counter
+    setCurrentStreak(1); // Reset to initial streak of 1
+    setHighestTile(2); // Reset to initial tile value of 2
+    setAchievedTiles(new Set([2])); // Reset with initial tile value
+    setAchievements({
+      scoreOver1000: false,
+      streakOver10: false,
+      tile256Generated: false
+    });
     setGameOver(false);
     setWon(false);
     setKeepPlaying(false);
     setIsNewHighScore(false);
   }, []);
 
-  // Add a new tile (2 or 4) to a random empty cell
   const addNewTile = (grid) => {
     const emptyCells = [];
     for (let i = 0; i < 4; i++) {
@@ -67,37 +150,60 @@ const Game2048 = () => {
     }
   };
 
-  // Update score and check for win
   const updateScore = (points) => {
-    setScore(prevScore => {
-      const newScore = prevScore + points;
-      // Update high score if current score exceeds it
-      if (newScore > highScore) {
-        setHighScore(newScore);
-        setIsNewHighScore(true);
-      }
-      return newScore;
-    });
+    const newScore = score + points;
+    setScore(newScore);
+    
+    // Check for new high score
+    if (newScore > highScore) {
+      setHighScore(newScore);
+      setIsNewHighScore(true);
+    }
+    
+    // Check for score achievement
+    if (newScore > 1000 && !achievements.scoreOver1000) {
+      setAchievements(prev => ({
+        ...prev,
+        scoreOver1000: true
+      }));
+    }
   };
 
-  // Save game data to the server
   const saveGame = async (finalScore) => {
-    console.log('saveGame called with score:', finalScore, 'Current high score:', highScore);
+    // Log final metrics when game ends
+    logGameMetrics();
     
-    if (!user) {
-      console.log('Not saving game: No user logged in');
+    if (!user?.userid) {
       return;
     }
     
     if (gameSaved) {
-      console.log('Not saving game: Game already saved');
       return;
     }
     
     try {
-      // Calculate the new high score
+      // Calculate the new high score and game metrics
       const newHighScore = Math.max(highScore, finalScore);
+      const highestTile = Math.max(...grid.flat().map(cell => cell?.value || 0));
+      const gameWon = won || highestTile >= 2048;
       
+      // Submit game results for challenge tracking
+      await submitGameResult({
+        userId: user.userid,
+        gameId: 1, // 2048 game ID
+        score: finalScore,
+        streak: 0, // You might want to track this during gameplay
+        cumulativeMetric: highestTile, // Highest tile reached
+        consistencyValue: highestTile // For consistency challenges (reaching 256+ tile)
+      });
+      
+      // Save the game data (existing functionality)
+      await saveGameData({
+        userid: user.userid,
+        gameid: 1, // 2048 game ID
+        score: finalScore,
+        highscore: newHighScore
+      });
       const gameData = {
         userid: user.userid,
         gameid: 1, // 1 is the game ID for 2048
@@ -155,6 +261,10 @@ const Game2048 = () => {
   // Move tiles in a direction
   const moveTiles = (direction) => {
     if (gameOver && !keepPlaying) return;
+    
+    // Track the highest tile before the move
+    const currentMaxTile = Math.max(...grid.flat().map(cell => cell?.value || 0));
+    updateHighestTile(currentMaxTile);
 
     // Create a deep copy of the grid with proper tile objects
     let newGrid = grid.map(row => 
@@ -166,6 +276,7 @@ const Game2048 = () => {
     
     let moved = false;
     let newScore = score;
+    let tilesMerged = 0; // Track number of tiles merged this move
 
     // Process the grid based on direction
     const processGrid = (i, j) => {
@@ -176,7 +287,7 @@ const Game2048 = () => {
         let newJ = j;
         let tile = { value: tileValue, merged: false };
 
-        // Move the tile as far as possible
+        // Move the tile as far as possible in the given direction
         while (true) {
           const [nextI, nextJ] = [
             direction === 'up' ? newI - 1 : direction === 'down' ? newI + 1 : newI,
@@ -202,6 +313,7 @@ const Game2048 = () => {
               newGrid[nextI][nextJ] = { value: tile.value * 2, merged: true };
               newGrid[newI][newJ] = 0;
               newScore += tile.value * 2;
+              tilesMerged++;
               moved = true;
               if (tile.value * 2 === 2048 && !won) {
                 setWon(true);
@@ -261,13 +373,16 @@ const Game2048 = () => {
       addNewTile(newGrid);
       updateScore(newScore - score);
       
+      // Only increment move counter if tiles actually moved
+      setMoveCount(prev => prev + 1);
+      
       // Check for game over
       if (hasNoMovesLeft(newGrid)) {
         setGameOver(true);
         saveGame(newScore);
       }
       
-      // Update the grid
+      // Update the grid and log metrics
       setGrid(newGrid);
     }
   };

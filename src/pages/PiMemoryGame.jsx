@@ -10,7 +10,7 @@ export default function PiMemoryGame() {
   const [level, setLevel] = useState(1);
   const [display, setDisplay] = useState("");
   const [userInput, setUserInput] = useState("");
-  const [phase, setPhase] = useState("show"); // "show" | "input" | "gameover"
+  const [phase, setPhase] = useState("show");
   const [score, setScore] = useState(0);
   const [message, setMessage] = useState("");
   const interval = useRef(null);
@@ -18,6 +18,10 @@ export default function PiMemoryGame() {
   const [highScore, setHighScore] = useState(0);
   const {user} = useAuth();
   const [gameOver, setGameOver] = useState(false);
+  const [streak, setStreak] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
+  const [digitsEntered, setDigitsEntered] = useState(0);
+  const maxLevelReached = useRef(1);
 
 
   useEffect(() => {
@@ -25,16 +29,16 @@ export default function PiMemoryGame() {
         try {
           const userId = user?.userid;
           if (!userId) {
-            console.warn("⚠️ No user ID found — skipping high score fetch.");
+            console.warn("No user ID found — skipping high score fetch.");
             return;
           }
     
-          console.log("📥 Fetching initial high score...");
+          console.log("Fetching initial high score...");
           const fetched = await fetchHighScore(userId, 5);
-          console.log("🎯 Initial high score fetched:", fetched);
+          console.log("Initial high score fetched:", fetched);
           setHighScore(fetched || 0);
         } catch (err) {
-          console.error("❌ Error fetching initial high score:", err);
+          console.error("Error fetching initial high score:", err);
           setHighScore(0);
         }
       };
@@ -42,7 +46,6 @@ export default function PiMemoryGame() {
       loadHighScore();
     }, [user]);
     
-    // 🏆 2️⃣ Live update local high score during gameplay
     useEffect(() => {
       if (score > highScore) {
         console.log(`🏆 New high score during game! ${score} > ${highScore}`);
@@ -50,7 +53,6 @@ export default function PiMemoryGame() {
       }
     }, [score, highScore]);
     
-    // 💾 3️⃣ Save data to backend when game ends
     useEffect(() => {
       if (!gameOver) return;
     
@@ -61,6 +63,16 @@ export default function PiMemoryGame() {
             console.warn("⚠️ No user ID found — skipping save.");
             return;
           }
+          
+          const metrics = {
+            score: score,
+            streak: maxStreak,
+            scoreOver1000: score > 1000,
+            streakOver10: maxStreak >= 10,
+            digits_entered: digitsEntered,
+            isMaxLevelOver10: maxLevelReached.current >= 10
+          };
+          console.log('Pi Memory Game metrics:', metrics);
     
           console.log("💾 Saving game data to backend...");
           await saveGameData({
@@ -71,9 +83,8 @@ export default function PiMemoryGame() {
             dateplayed: new Date().toISOString(),
           });
     
-          // 🔁 Re-fetch updated high score to confirm
-          const updatedHigh = await fetchHighScore(userId, 10);
-          console.log("📈 Updated high score fetched after save:", updatedHigh);
+          const updatedHigh = await fetchHighScore(userId, 5);
+          console.log("Updated high score fetched after save:", updatedHigh);
           setHighScore(updatedHigh || highScore);
         } catch (err) {
           console.error("❌ Error saving game data:", err);
@@ -81,7 +92,7 @@ export default function PiMemoryGame() {
       };
     
       saveData();
-    }, [gameOver]);
+    }, [gameOver, score, maxStreak, digitsEntered, highScore, user]);
   useEffect(() => {
     startRound(1);
     return () => clearInterval(interval.current);
@@ -93,6 +104,10 @@ export default function PiMemoryGame() {
     setMessage("");
     setDisplay("");
     clearInterval(interval.current);
+    
+    if (newLevel > maxLevelReached.current) {
+      maxLevelReached.current = newLevel;
+    }
 
     const seq = PI_DIGITS.slice(0, newLevel + 1);
     let index = 0;
@@ -139,6 +154,11 @@ export default function PiMemoryGame() {
     // Prevent typing extra digits
     if (val.length > maxLength) val = val.slice(0, maxLength);
     setUserInput(val);
+    
+    // Track digits entered
+    if (val.length > userInput.length) {
+      setDigitsEntered(prev => prev + 1);
+    }
   
     // When full input entered, auto-submit after short delay
     if (val.length === maxLength) {
@@ -151,10 +171,15 @@ export default function PiMemoryGame() {
           const nextLevel = level + 1;
           const basePoints = nextLevel;
           const totalPoints = Math.round(basePoints * bonusMultiplier);
+          const newStreak = streak + 1;
+          
           setScore((s) => s + totalPoints);
+          setStreak(newStreak);
+          setMaxStreak(prev => Math.max(prev, newStreak));
           setLevel(nextLevel);
           startRound(nextLevel);
         } else {
+          setStreak(0);
           setPhase("gameover");
           setGameOver(true);
           setMessage(`❌ Wrong! Correct was ${correct}`);
@@ -206,6 +231,8 @@ export default function PiMemoryGame() {
                 onClick={() => {
                   setLevel(1);
                   setScore(0);
+                  setStreak(0);
+                  setDigitsEntered(0);
                   startRound(1);
                   setGameOver(false);
                 }}
@@ -232,6 +259,10 @@ export default function PiMemoryGame() {
           <div className="stat">
             <span className="stat-label">LEVEL</span>
             <span className="stat-value">{level}</span>
+          </div>
+          <div className="stat">
+            <span className="stat-label">STREAK</span>
+            <span className="stat-value">{streak}</span>
           </div>
         </div>
       </div>

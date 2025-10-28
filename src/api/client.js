@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// Configure axios defaults
 const apiClient = axios.create({
   baseURL: 'http://localhost:3002',
   headers: {
@@ -9,7 +8,6 @@ const apiClient = axios.create({
   withCredentials: true
 });
 
-// Add a request interceptor to log requests
 apiClient.interceptors.request.use(
   (config) => {
     console.log('Request:', config.method.toUpperCase(), config.url);
@@ -20,7 +18,6 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Add a response interceptor to handle errors
 apiClient.interceptors.response.use(
   (response) => {
     return response;
@@ -40,12 +37,6 @@ apiClient.interceptors.response.use(
   }
 );
 
-/**
- * Fetches the high score for a user and game
- * @param {number} userId - The user ID
- * @param {number} gameId - The game ID (1 for 2048)
- * @returns {Promise<number>} The high score
- */
 export const fetchHighScore = async (userId, gameId) => {
   try {
     const response = await apiClient.get(`/api/usergames/highscore?userid=${userId}&gameid=${gameId}`);
@@ -57,13 +48,9 @@ export const fetchHighScore = async (userId, gameId) => {
 };
 
 /**
- * Saves game data to the server
- * @param {Object} gameData - The game data to save
- * @param {number} gameData.userid - The user ID
- * @param {number} gameData.gameid - The game ID (1 for 2048)
- * @param {number} gameData.score - The final score
- * @param {number} gameData.highscore - The high score
- * @returns {Promise<Object>} The saved game data
+ * Saves game data to the server.
+ * @param {Object} gameData - The game data to save.
+ * @returns {Promise<Object>} The saved game data.
  */
 export const saveGameData = async (gameData) => {
   try {
@@ -76,8 +63,8 @@ export const saveGameData = async (gameData) => {
 };
 
 /**
- * Fetches all users from the API
- * @returns {Promise<Array>} A promise that resolves to an array of user objects
+ * Fetches all users from the API.
+ * @returns {Promise<Array>} A promise that resolves to an array of user objects.
  */
 export const getUsers = async () => {
   try {
@@ -91,13 +78,8 @@ export const getUsers = async () => {
 
 /**
  * Creates a new user via the API.
- * @param {object} userData - The data for the new user.
- * @returns {Promise<object>} A promise that resolves to the newly created user object.
- */
-/**
- * Creates a new user
- * @param {Object} userData - The user data to create
- * @returns {Promise<Object>} The created user data
+ * @param {Object} userData - The data for the new user.
+ * @returns {Promise<Object>} A promise that resolves to the newly created user object.
  */
 export const createUser = async (userData) => {
   try {
@@ -105,7 +87,6 @@ export const createUser = async (userData) => {
     return response.data;
   } catch (error) {
     if (error.response) {
-      // Forward the server's error message if available
       throw new Error(error.response.data.error || 'Failed to create user');
     }
     throw error;
@@ -113,16 +94,10 @@ export const createUser = async (userData) => {
 };
 
 /**
- * Handles user login via the API (UNENCRYPTED FOR DEMO).
+ * Logs in a user via the API.
  * @param {string} username - The user's username.
  * @param {string} password - The user's password.
- * @returns {Promise<object>} A promise that resolves with a success message and user data.
- */
-/**
- * Logs in a user
- * @param {string} username - The username
- * @param {string} password - The password
- * @returns {Promise<Object>} The user data and token
+ * @returns {Promise<Object>} A promise that resolves with a success message and user data.
  */
 export const login = async (username, password) => {
   try {
@@ -144,9 +119,9 @@ export const login = async (username, password) => {
 };
 
 /**
- * Gets the diagnostic status for a user
- * @param {number} userId - The user's ID
- * @returns {Promise<boolean>} Whether the user has completed the diagnostic
+ * Fetches the diagnostic status for a user.
+ * @param {number} userId - The user's ID.
+ * @returns {Promise<boolean>} Whether the user has completed the diagnostic.
  */
 export const getDiagnosticStatus = async (userId) => {
   try {
@@ -159,10 +134,10 @@ export const getDiagnosticStatus = async (userId) => {
 };
 
 /**
- * Updates the diagnostic status for a user
- * @param {number} userId - The user's ID
- * @param {boolean} status - New diagnostic status
- * @returns {Promise<Object>} Updated user object
+ * Updates the diagnostic status for a user.
+ * @param {number} userId - The user's ID.
+ * @param {boolean} status - New diagnostic status.
+ * @returns {Promise<Object>} Updated user object.
  */
 export const updateDiagnosticStatus = async (userId, status) => {
   try {
@@ -174,12 +149,11 @@ export const updateDiagnosticStatus = async (userId, status) => {
   }
 };
 
-
 /**
- * Posts diagnostic results to the server
- * @param {number} userId - The user ID
- * @param {boolean[]} resultsArray - Array of booleans for each question (true if correct)
- * @returns {Promise<Object>} The server response
+ * Posts diagnostic results to the server.
+ * @param {number} userId - The user ID.
+ * @param {boolean[]} resultsArray - Array of booleans for each question (true if correct).
+ * @returns {Promise<Object>} The server response.
  */
 export async function saveDiagnosticResults(userid, results) {
   console.log("Request:", `POST /api/users/${userid}/diagnostic/results`);
@@ -195,10 +169,8 @@ export async function saveDiagnosticResults(userid, results) {
   }
 }
 
-
-
 /**
- * 🔹 Fetch the user's highest cumulative highscore across ALL games.
+ * Fetches the user's highest cumulative highscore across ALL games.
  * @param {number|string} userId - The user's ID.
  * @returns {Promise<number>} The user's highest recorded highscore (or 0 if none).
  */
@@ -213,9 +185,9 @@ export const fetchUserHighestScore = async (userId) => {
 };
 
 /**
- * 🔹 Fetch total number of games played by a user (including repeats)
- * @param {number|string} userId - The user's ID
- * @returns {Promise<number>} - Total number of games played
+ * Fetches total number of games played by a user (including repeats).
+ * @param {number|string} userId - The user's ID.
+ * @returns {Promise<number>} Total number of games played.
  */
 export const fetchUserGameCount = async (userId) => {
   try {
@@ -227,19 +199,29 @@ export const fetchUserGameCount = async (userId) => {
   }
 };
 
-// Fetch all user scores from usergames table
+/**
+ * Fetch all user scores from usergames table.
+ * @param {number} userId - The user's ID.
+ * @returns {Promise<Array>} An array of scores.
+ */
 export async function fetchAllScores(userId) {
   try {
     const response = await fetch(`http://localhost:3002/api/usergames/${userId}/scores`);
     if (!response.ok) throw new Error("Failed to fetch scores");
     const data = await response.json();
-    return data.scores; // returns an array like [500, 750, 900, 1100, ...]
+    return data.scores; 
   } catch (error) {
     console.error("Error fetching scores:", error);
     return [];
   }
 }
 
+/**
+ * Fetch user game scores.
+ * @param {number} userId - The user's ID.
+ * @param {number} gameId - The game's ID.
+ * @returns {Promise<Array>} An array of scores.
+ */
 export async function fetchUserGameScores(userId, gameId) {
   try {
     const response = await fetch(`http://localhost:3002/api/usergames/${userId}/${gameId}/scores`);
@@ -252,10 +234,77 @@ export async function fetchUserGameScores(userId, gameId) {
 }
 
 /**
- * Fetches game recommendations for a specific user
- * @param {number|string} userId - The ID of the user
- * @returns {Promise<Array>} A promise that resolves to an array of recommended game objects
+ * Fetches active challenges for a user.
+ * @param {number} userId - The user's ID.
+ * @returns {Promise<Array>} Array of challenge objects with id, name, description, progress, target, etc.
  */
+export async function fetchUserChallenges(userId) {
+  try {
+    const response = await fetch(`http://localhost:3002/api/users/${userId}/challenges`, {
+      credentials: 'include', 
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Failed to fetch challenges:', errorData);
+      throw new Error(errorData.message || 'Failed to fetch challenges');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching user challenges:", error);
+    throw error; 
+  }
+}
+
+/**
+ * Fetches game recommendations for a specific user.
+ * @param {number|string} userId - The ID of the user.
+ * @returns {Promise<Array>} A promise that resolves to an array of recommended game objects.
+ */
+export async function getRecommendations(userId) {
+  try {
+    const response = await fetch(`http://localhost:3002/api/recommendations/${userId}`);
+    if (!response.ok) throw new Error("Failed to fetch recommendations");
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching recommendations:", error);
+    return [];
+  }
+}
+
+/**
+ * Updates challenges based on game data.
+ * @param {number} userId - The user ID.
+ * @param {number} gameId - The game ID (1: 2048, 2: ArithmeticBlaster, 3: Fraction Match, etc.).
+ * @param {Object} gameData - The game data.
+ * @param {number} [gameData.score] - The final score.
+ * @param {number} [gameData.streak] - The highest streak achieved.
+ * @param {boolean} [gameData.scoreOver1000] - Whether score is over 1000.
+ * @param {boolean} [gameData.streakOver10] - Whether streak is over 10.
+ * @param {number} [gameData.gameSpecificCumulative] - Game-specific cumulative value.
+ * @param {boolean} [gameData.gameConsistency] - Whether game consistency challenge is met.
+ * @returns {Promise<Object>} The updated challenges.
+ */
+export async function updateGameChallenges(userId, gameId, gameData) {
+  try {
+    const response = await apiClient.post('/api/challenges/update', {
+      userId,
+      gameId,
+      ...gameData
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error updating game challenges:', error);
+    // Don't throw the error to prevent breaking the game flow
+    return { success: false, error: error.message };
+  }
+}
+
 export async function getRecommendations(userId) {
   try {
     const response = await fetch(`http://localhost:3002/api/recommendations/${userId}`);

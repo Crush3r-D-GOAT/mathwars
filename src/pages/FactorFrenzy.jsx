@@ -26,8 +26,8 @@ export default function FactorFrenzy({
   startMinNumber = 12,
   startMaxNumber = 36,
 }) {
-  const [target, setTarget] = useState(null); // number
-  const [candidates, setCandidates] = useState([]); // {value, id, isFactor, picked}
+  const [target, setTarget] = useState(null);
+  const [candidates, setCandidates] = useState([]);
   const [pickedSet, setPickedSet] = useState(new Set());
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -35,15 +35,16 @@ export default function FactorFrenzy({
   const [feedback, setFeedback] = useState("");
   const [timeLeft, setTimeLeft] = useState(startTime);
   const [currentTimer, setCurrentTimer] = useState(startTime);
-  const [rounds, setRounds] = useState(0); // total rounds completed
+  const [rounds, setRounds] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [highScore, setHighScore] = useState(null);
+  const [numberFactorsSelected, setNumberFactorsSelected] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
+  const hasLoggedMetrics = useRef(false);
   const { user } = useAuth();
 
   const timerRef = useRef(null);
-  const timeOverRef = useRef(false); // Strict-mode safe guard
-
-  console.log("🪞 window.user on load:", user);
+  const timeOverRef = useRef(false);
 
 // Fetch high score once at the start
     useEffect(() => {
@@ -145,6 +146,20 @@ export default function FactorFrenzy({
     setTimeLeft(currentTimer);
   };
 
+  const resetGame = () => {
+    setScore(0);
+    setStreak(0);
+    setMaxStreak(0);
+    setLives(3);
+    setRounds(0);
+    setCurrentTimer(startTime);
+    setGameOver(false);
+    setFeedback("");
+    setNumberFactorsSelected(0);
+    hasLoggedMetrics.current = false;
+    generateRound();
+  };
+
   // start first round
   useEffect(() => {
     generateRound();
@@ -187,10 +202,23 @@ export default function FactorFrenzy({
     const item = candidates.find((c) => c.id === id);
     if (!item) return;
     if (pickedSet.has(id)) return; // already picked
+    
+    // Track factor selections
+    if (item.isFactor) {
+      setNumberFactorsSelected((prev) => prev + 1);
+    }
 
     if (!item.isFactor) {
       // wrong tap
       setFeedback("❌ Not a factor — you lose a life!");
+      setLives((l) => {
+        const newLives = l - 1;
+        if (newLives <= 0) {
+          logGameMetrics();
+          setGameOver(true);
+        }
+        return newLives;
+      });
       setStreak(0);
       // mark picked (so it doesn't penalize repeatedly)
       setCandidates((prev) => prev.map((c) => (c.id === id ? { ...c, picked: true } : c)));
@@ -222,94 +250,67 @@ export default function FactorFrenzy({
 
   // end round: success boolean, message
   const endRound = (success, message) => {
-    // prevent double-calls
-    if (timeOverRef.current) {
-      // allow handling once; do not run again
-    }
-    // clear timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-
-    // update rounds and maybe adjust timer speed
-    setRounds((rPrev) => {
-      const newRounds = rPrev + 1;
-
-      // every 8 rounds, decrease currentTimer by 1 (min minTimer)
-      if (newRounds % 8 === 0) {
-        setCurrentTimer((t) => Math.max(minTimer, t - 1));
-      }
-
-      return newRounds;
-    });
-
+    
+    setFeedback(message);
+    
+    // Update score and streak if successful
     if (success) {
-      const numFactors = candidates.filter((c) => c.isFactor).length;
-      // points: number of factors * (streak+1)
-      setScore((s) => s + Math.floor(Math.pow(numFactors, 2) * (streak + 1)*Math.pow(1.5, Math.floor(streak/5))));
-      setStreak((st) => st + 1);
-      setFeedback(message || "Success!");
-      // next round after short pause
-      setTimeout(() => {
-        generateRound();
-      }, 700);
-      return;
-    }
-
-    // failure: lose a life
-    setLives((lPrev) => {
-      const newLives = Math.max(0, lPrev - 1);
-      setFeedback(message || "Failed round!");
+      const basePoints = 5;
+      const speedBonus = Math.max(1, Math.floor(timeLeft * 0.5));
+      const streakBonus = Math.min(10, Math.floor(streak / 2));
+      const points = basePoints + speedBonus + streakBonus;
+      
+      setScore(s => s + points);
+      
+      setStreak(s => {
+        const newStreak = s + 1;
+        setMaxStreak(prevMax => Math.max(prevMax, newStreak));
+        return newStreak;
+      });
+    } else {
       setStreak(0);
-      if (newLives <= 0) {
-        setGameOver(true);
-      } else {
-        // next round after pause
+    }
+    
+    // Update rounds and check for game over
+    setRounds(r => {
+      const newRounds = r + 1;
+      
+      // Every 8 rounds, decrease timer (min minTimer)
+      if (newRounds % 8 === 0) {
+        setCurrentTimer(t => Math.max(minTimer, t - 1));
+      }
+      
+      // Start next round after a delay if not game over
+      if (!gameOver) {
         setTimeout(() => {
           generateRound();
-        }, 900);
+        }, 1000);
       }
-      return newLives;
+      
+      return newRounds;
     });
   };
 
-  const resetGame = () => {
-    setScore(0);
-    setStreak(0);
-    setLives(3);
-    setFeedback("");
-    setRounds(0);
-    setCurrentTimer(startTime);
-    setGameOver(false);
-    setPickedSet(new Set());
-    generateRound();
-  };
 
-  if (gameOver) {
-    return (
-      <div className="ff-container">
-        <div className="ff-card ff-game-over">
-          <h2>💥 Game Over — Factor Frenzy</h2>
-          <p className="ff-final">
-            Final Score: <strong>{score}</strong>
-          </p>
-          <div className="ff-game-over-buttons">
-            <button className="ff-btn ff-primary" onClick={resetGame}>
-              Play Again
-            </button>
-            <button
-              className="ff-btn ff-secondary"
-              onClick={() => (window.location.href = "/")}
-            >
-              Back to Main Menu
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
+  const logGameMetrics = () => {
+    if (hasLoggedMetrics.current) return;
+    
+    const metrics = {
+      score: score,
+      streak: maxStreak,
+      isScoreOver1000: score > 1000,
+      isStreakOver10: maxStreak > 10,
+      numberFactorsSelected: numberFactorsSelected,
+      isnumberFactorsSelectedOver30: numberFactorsSelected > 30
+    };
+    console.log('FactorFrenzy metrics:');
+    console.log(metrics);
+    hasLoggedMetrics.current = true;
+  };
 
   return (
     <div className="ff-container">

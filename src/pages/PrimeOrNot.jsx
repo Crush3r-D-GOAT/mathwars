@@ -3,7 +3,6 @@ import { useAuth } from "../context/AuthContext";
 import { fetchHighScore, saveGameData } from "../api/client";
 import "../styles/PrimeOrNot.css";
 
-// Helper function moved outside component
 const smallestDivisor = (n) => {
   if (n % 2 === 0) return 2;
   for (let i = 3; i <= Math.sqrt(n); i += 2) {
@@ -26,15 +25,15 @@ export default function PrimeOrNot({ withTimer = true, timerSeconds = 8 }) {
   const [currentTimer, setCurrentTimer] = useState(timerSeconds);
   const timerRef = useRef(null);
   const [gameOver, setGameOver] = useState(false);
+  const [notPrimeClicked, setNotPrimeClicked] = useState(0);
+  const hasLoggedMetrics = useRef(false);
 
 
 
-  // Fetch high score when component mounts or user changes
   useEffect(() => {
     const loadHighScore = async () => {
       if (user?.userid) {
         try {
-          // Game ID 6 for PrimeOrNot
           const response = await fetchHighScore(user.userid, 6);
           setHighScore(parseInt(response) || 0);
         } catch (error) {
@@ -116,38 +115,53 @@ export default function PrimeOrNot({ withTimer = true, timerSeconds = 8 }) {
     return (streak + 1) * multiplier;
   };
   
+  const logGameMetrics = (finalScore) => {
+    if (hasLoggedMetrics.current) return;
+    
+    const metrics = {
+      score: finalScore,
+      streak: streak,
+      isScoreOver1000: finalScore > 1000,
+      isStreakOver10: streak > 10,
+      notPrimeClicked: notPrimeClicked,
+      isNotPrimeClickedOver20: notPrimeClicked > 20
+    };
+    console.log('Prime or Not metrics:');
+    console.log(metrics);
+    hasLoggedMetrics.current = true;
+  };
+
   const handleChoice = (choice, timeout = false) => {
-    // choice: true => guessed prime, false => guessed not-prime, null => timeout
+    if (choice === false) {
+      setNotPrimeClicked(prev => prev + 1);
+    }
+    
     const correct = isPrime(num);
     setAttempts((prev) => {
-        const newAttempts = prev + 1;
-    
-        if (newAttempts % 8 === 0) {
-          setCurrentTimer((t) => Math.max(t - 1/2, 3)); // decrease by 1 sec, min 3
-        }
-    
-        return newAttempts;
+      const newAttempts = prev + 1;
+  
+      if (newAttempts % 8 === 0) {
+        setCurrentTimer((t) => Math.max(t - 1/2, 3)); // decrease by 1 sec, min 3
+      }
+  
+      return newAttempts;
     });
   
     if (timeout) {
       setFeedback(`⏰ Time! It was ${correct ? "prime" : "not prime"}.`);
       setStreak(0);
       setLives((l) => {
-        const newLives = Math.max(l - 1, 0);
-        if (newLives === 0) setGameOver(true);
-      
-        // Only go to next number if lives remain
-        if (newLives > 0) {
-          setTimeout(nextNumber, 900);
+        const newLives = l - 1;
+        if (newLives <= 0) {
+          setGameOver(true);
+          logGameMetrics(score);
+          return 0;
         }
-      
+        setTimeout(nextNumber, 900);
         return newLives;
       });
       
       setShowExplain(true);
-      setTimeout(() => {
-        if (lives - 1 > 0) nextNumber();
-      }, 900);
       return;
     }
   
@@ -177,18 +191,24 @@ export default function PrimeOrNot({ withTimer = true, timerSeconds = 8 }) {
     } else {
       setFeedback(`❌ Not quite — it was ${correct ? "prime" : "not prime"}.`);
       setStreak(0);
-      setLives((l) => Math.max(l - 1, 0));
+      setLives((l) => {
+        const newLives = l - 1;
+        if (newLives <= 0) {
+          setGameOver(true);
+          logGameMetrics(score);
+          return 0;
+        }
+        setTimeout(nextNumber, 900);
+        return newLives;
+      });
       setShowExplain(true);
-      setTimeout(() => {
-        if (lives - 1 > 0) nextNumber();
-      }, 900);
     }
   };
   
 
   const saveScore = async (finalScore) => {
     if (!user) return;
-
+    
     try {
       const gameData = {
         userid: user.userid,
@@ -214,6 +234,9 @@ export default function PrimeOrNot({ withTimer = true, timerSeconds = 8 }) {
     if (score > 0) {
       saveScore(score);
     }
+    
+    // Reset metrics logging flag
+    hasLoggedMetrics.current = false;
     
     setScore(0);
     setLives(3);

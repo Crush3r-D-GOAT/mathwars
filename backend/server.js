@@ -4,6 +4,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const { getRecommendations, challengeCache } = require('./recommendation');
+const { updateChallenges } = require('./challengeUtils');
 
 const app = express();
 app.use(express.json()); // For parsing application/json
@@ -48,6 +49,68 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+/**
+ * GET /api/users/:userId/challenges
+ * Fetches all active challenges for a specific user
+ */
+app.get('/api/users/:userId/challenges', async (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
+
+  try {
+    const query = `
+      SELECT 
+        ac.challenge_id,
+        ct.name AS challenge_name,
+        ct.description AS challenge_description,
+        ac.progress_value,
+        ac.target_value,
+        ac.category_id,
+        ac.userid,
+        ac.gameid,
+        g.gname AS game_name
+      FROM active_challenges ac
+      JOIN challenge_templates ct ON ac.template_id = ct.template_id
+      LEFT JOIN games g ON ac.gameid = g.gameid
+      WHERE ac.userid = $1
+      ORDER BY ac.challenge_id;
+    `;
+
+    const result = await pool.query(query, [userId]);
+    
+    // Format the response with all requested fields
+    const challenges = result.rows.map(row => {
+      let description = row.challenge_description
+        .replace('{target}', row.target_value);
+      
+      // Replace {game} with the game name if it exists in the description
+      if (description.includes('{game}')) {
+        description = description.replace('{game}', row.game_name || 'game');
+      }
+      
+      return {
+        id: row.challenge_id,
+        name: row.challenge_name,
+        description,
+        progress: row.progress_value,
+        target: row.target_value,
+        category_id: row.category_id,
+        userid: row.userid,
+        gameid: row.gameid
+      };
+    });
+
+    res.json(challenges);
+  } catch (error) {
+    console.error('Error fetching user challenges:', error);
+    res.status(500).json({ error: 'Failed to fetch challenges' });
+  }
+});
+
+
 // GET: Get a user's diagnostic status
 app.get('/api/users/:id/diagnostic', async (req, res) => {
   const { id } = req.params;
@@ -84,25 +147,25 @@ app.post("/api/users/:userid/diagnostic/results", async (req, res) => {
   console.log("Received Results:", results);
 
 
-  // ✅ Validate payload
+  // Validate payload
   if (!Array.isArray(results) || results.length === 0) {
     return res.status(400).json({ error: "Results must be a non-empty array." });
   }
 
-  // ✅ Limit to 20 columns to match DB schema
+  // Limit to 20 columns to match DB schema
   const safeResults = results.slice(0, 20);
 
   const columns = safeResults.map((_, i) => `q${i + 1}`).join(", ");
   const values = safeResults.map((r) => !!r); // force boolean true/false
   const placeholders = values.map((_, i) => `$${i + 2}`).join(", ");
 
-  // ✅ Build UPDATE SET safely
+  // Build UPDATE SET safely
   const updateSet =
     safeResults.length > 0
       ? safeResults.map((_, i) => `q${i + 1} = EXCLUDED.q${i + 1}`).join(", ")
       : "";
 
-  // ✅ Final query
+  // Final query
   const query = `
     INSERT INTO diagnosticscores (userid, ${columns}, dateAttempted)
     VALUES ($1, ${placeholders}, CURRENT_DATE)
@@ -157,7 +220,7 @@ app.get('/api/user/:userid/highscore', async (req, res) => {
   }
 });
 
-// ✅ GET: Get total number of games a user has played (all sessions)
+// GET: Get total number of games a user has played (all sessions)
 app.get('/api/user/:userid/gamecount', async (req, res) => {
   const { userid } = req.params;
 
@@ -639,6 +702,38 @@ app.get('/api/test/challenges/:userId', async (req, res) => {
     console.error('Error generating challenges:', error);
     res.status(500).json({ 
       error: 'Failed to generate challenges',
+      details: error.message 
+    });
+  }
+});
+
+/**
+ * POST /api/challenges/update
+ * Updates challenges based on game data
+ * @param {number} userId - The user ID
+ * @param {number} gameId - The game ID
+ * @param {Object} gameData - The game data
+ */
+app.post('/api/challenges/update', async (req, res) => {
+  const { userId, gameId, ...gameData } = req.body;
+  
+  if (!userId || !gameId) {
+    return res.status(400).json({ 
+      error: 'Missing required fields',
+      details: 'Both userId and gameId are required' 
+    });
+  }
+
+  try {
+    const updatedChallenges = await updateChallenges(pool, userId, gameId, gameData);
+    res.json({
+      success: true,
+      updatedChallenges
+    });
+  } catch (error) {
+    console.error('Error updating challenges:', error);
+    res.status(500).json({ 
+      error: 'Failed to update challenges',
       details: error.message 
     });
   }

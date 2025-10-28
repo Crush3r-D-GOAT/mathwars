@@ -375,7 +375,7 @@ ON CONFLICT (name, gameid) DO UPDATE SET
 -- Angle Rush (gameid = 7)
 INSERT INTO challenge_metrics (name, description, is_game_specific, gameid)
 VALUES 
-    ('questions_answered', 'Number of angle questions answered', true, 7)
+    ('angle_questions_answered', 'Number of angle questions answered', true, 7)
 ON CONFLICT (name, gameid) DO UPDATE SET
     description = EXCLUDED.description,
     is_game_specific = EXCLUDED.is_game_specific;
@@ -404,6 +404,14 @@ ON CONFLICT (name, gameid) DO UPDATE SET
     description = EXCLUDED.description,
     is_game_specific = EXCLUDED.is_game_specific;
 
+
+INSERT INTO challenge_metrics (name, description, is_game_specific, gameid)
+VALUES 
+	('fraction_questions_answered', 'Number of questions answered in a game', true, 3)
+ON CONFLICT (name, gameid) DO UPDATE SET
+    description = EXCLUDED.description,
+    is_game_specific = EXCLUDED.is_game_specific;
+
 -- ============================================
 -- Challenge Templates
 -- ============================================
@@ -416,7 +424,7 @@ DELETE FROM challenge_templates;
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Point Master', 
-    'Score {target} total points across all games', 
+    'Score {target} total points across all {game} attempts', 
     (SELECT type_id FROM challenge_types WHERE name = 'cumulative'),
     (SELECT metric_id FROM challenge_metrics WHERE name = 'score' AND gameid IS NULL),
     10000,
@@ -428,7 +436,7 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Point Master')
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Streak Champion', 
-    'Achieve a combined {target} day streak across all games', 
+    'Achieve a combined {target} day streak across all {game} attempts', 
     (SELECT type_id FROM challenge_types WHERE name = 'cumulative'),
     (SELECT metric_id FROM challenge_metrics WHERE name = 'streak' AND gameid IS NULL),
     150,
@@ -441,7 +449,7 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Streak Champio
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Consistent Scorer', 
-    'Score 1000+ points in {target} different games', 
+    'Score 1000+ points in {target} different {game} games', 
     (SELECT type_id FROM challenge_types WHERE name = 'consistency'),
     (SELECT metric_id FROM challenge_metrics WHERE name = 'score' AND gameid IS NULL),
     3,  
@@ -453,7 +461,7 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Consistent Sco
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Streak Builder', 
-    'Achieve a 10+ day streak in {target} different games', 
+    'Achieve a 10+ streak in {target} different {game} games', 
     (SELECT type_id FROM challenge_types WHERE name = 'consistency'),
     (SELECT metric_id FROM challenge_metrics WHERE name = 'streak' AND gameid IS NULL),
     3,  
@@ -493,7 +501,7 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Bounce Master'
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Shape Master', 
-    'Calculate area for {target} shapes (triangles/rectangles/trapezoids/rhombuses)', 
+    'Calculate area for {target} trapizoids and rhombuses in Geometry Area Challenge', 
     (SELECT type_id FROM challenge_types WHERE name = 'cumulative'),
     (SELECT metric_id FROM challenge_metrics WHERE name = 'areas_entered' AND gameid = 4),
     25,
@@ -505,7 +513,7 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Shape Master')
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Pi Master', 
-    'Enter {target} digits of Pi (cumulative across games)', 
+    'Enter {target} digits of Pi in Pi Memory Game', 
     (SELECT type_id FROM challenge_types WHERE name = 'cumulative'),
     (SELECT metric_id FROM challenge_metrics WHERE name = 'digits_entered' AND gameid = 5),
     50,
@@ -517,7 +525,7 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Pi Master');
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Prime Hunter', 
-    'Click "Not Prime" {target} times', 
+    'Click "Not Prime" {target} times in Prime or Not', 
     (SELECT type_id FROM challenge_types WHERE name = 'cumulative'),
     (SELECT metric_id FROM challenge_metrics WHERE name = 'not_prime_clicks' AND gameid = 6),
     100,
@@ -529,7 +537,7 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Prime Hunter')
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Angle Ace', 
-    'Answer {target} angle questions', 
+    'Answer {target} angle questions in Angle Rush', 
     (SELECT type_id FROM challenge_types WHERE name = 'cumulative'),
     (SELECT metric_id FROM challenge_metrics WHERE name = 'questions_answered' AND gameid = 7),
     100,
@@ -541,7 +549,7 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Angle Ace');
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Equation Expert', 
-    'Solve {target} equations', 
+    'Solve {target} equations in Equation Blitz', 
     (SELECT type_id FROM challenge_types WHERE name = 'cumulative'),
     (SELECT metric_id FROM challenge_metrics WHERE name = 'equations_solved' AND gameid = 8),
     100,
@@ -553,7 +561,7 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Equation Exper
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Factor Pro', 
-    'Select {target} factors', 
+    'Select {target} factors in Factor Frenzy', 
     (SELECT type_id FROM challenge_types WHERE name = 'cumulative'),
     (SELECT metric_id FROM challenge_metrics WHERE name = 'factors_selected' AND gameid = 9),
     150,
@@ -565,7 +573,7 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Factor Pro');
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Slope Star', 
-    'Answer {target} slope questions', 
+    'Answer {target} slope questions in Slope Sprint', 
     (SELECT type_id FROM challenge_types WHERE name = 'cumulative'),
     (SELECT metric_id FROM challenge_metrics WHERE name = 'slope_questions_answered' AND gameid = 10),
     100,
@@ -581,9 +589,9 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Slope Star');
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     '2048 Champion', 
-    'Reach the 256 tile in {target} different games', 
+    'Reach the 256 tile in {target} different 2048 games', 
     (SELECT type_id FROM challenge_types WHERE name = 'consistency'),
-    (SELECT metric_id FROM challenge_metrics WHERE name = 'tile_reached' AND gameid = 1),
+    (SELECT metric_id FROM challenge_metrics WHERE name = 'games_played_well'),
     3,  -- Number of games required
     false,
     1
@@ -595,7 +603,7 @@ SELECT
     'Fraction Pro', 
     'Answer 10+ questions correctly in {target} different Fraction Match games', 
     (SELECT type_id FROM challenge_types WHERE name = 'consistency'),
-    (SELECT metric_id FROM challenge_metrics WHERE name = 'bounces_counted' AND gameid = 3),
+    (SELECT metric_id FROM challenge_metrics WHERE name = 'games_played_well'),
     3,  -- Number of games required
     false,
     3
@@ -605,9 +613,9 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Fraction Pro')
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Area Ace', 
-    'Calculate 5+ shapes correctly in {target} different Geometry Area games', 
+    'Calculate 5+ trapizoids and rhombuses correctly in {target} different Geometry Area Challenge games', 
     (SELECT type_id FROM challenge_types WHERE name = 'consistency'),
-    (SELECT metric_id FROM challenge_metrics WHERE name = 'areas_entered' AND gameid = 4),
+    (SELECT metric_id FROM challenge_metrics WHERE name = 'games_played_well'),
     3,  -- Number of games required
     false,
     4
@@ -619,7 +627,7 @@ SELECT
     'Pi Enthusiast', 
     'Reach level 10+ in {target} different Pi Memory games', 
     (SELECT type_id FROM challenge_types WHERE name = 'consistency'),
-    (SELECT metric_id FROM challenge_metrics WHERE name = 'level_reached' AND gameid = 5),
+    (SELECT metric_id FROM challenge_metrics WHERE name = 'games_played_well'),
     3,  -- Number of games required
     false,
     5
@@ -629,9 +637,9 @@ WHERE NOT EXISTS (SELECT 1 FROM challenge_templates WHERE name = 'Pi Enthusiast'
 INSERT INTO challenge_templates (name, description, type_id, metric_id, base_target_value, is_general, gameid)
 SELECT 
     'Prime Expert', 
-    'Click "Not Prime" 20+ times in {target} different games', 
+    'Click "Not Prime" 20+ times in {target} different Prime or Not games', 
     (SELECT type_id FROM challenge_types WHERE name = 'consistency'),
-    (SELECT metric_id FROM challenge_metrics WHERE name = 'not_prime_clicks' AND gameid = 6),
+    (SELECT metric_id FROM challenge_metrics WHERE name = 'games_played_well'),
     3,  -- Number of games required
     false,
     6
@@ -643,7 +651,7 @@ SELECT
     'Angle Master', 
     'Answer 20+ questions correctly in {target} different Angle Rush games', 
     (SELECT type_id FROM challenge_types WHERE name = 'consistency'),
-    (SELECT metric_id FROM challenge_metrics WHERE name = 'questions_answered' AND gameid = 7),
+    (SELECT metric_id FROM challenge_metrics WHERE name = 'games_played_well'),
     3,  -- Number of games required
     false,
     7
@@ -655,7 +663,7 @@ SELECT
     'Equation Master', 
     'Solve 20+ equations correctly in {target} different Equation Blitz games', 
     (SELECT type_id FROM challenge_types WHERE name = 'consistency'),
-    (SELECT metric_id FROM challenge_metrics WHERE name = 'equations_solved' AND gameid = 8),
+    (SELECT metric_id FROM challenge_metrics WHERE name = 'games_played_well'),
     3,  -- Number of games required
     false,
     8
@@ -667,7 +675,7 @@ SELECT
     'Factor Master', 
     'Select 30+ factors in {target} different Factor Frenzy games', 
     (SELECT type_id FROM challenge_types WHERE name = 'consistency'),
-    (SELECT metric_id FROM challenge_metrics WHERE name = 'factors_selected' AND gameid = 9),
+    (SELECT metric_id FROM challenge_metrics WHERE name = 'games_played_well'),
     3,  -- Number of games required
     false,
     9
@@ -679,7 +687,7 @@ SELECT
     'Slope Master', 
     'Answer 20+ questions correctly in {target} different Slope Sprint games', 
     (SELECT type_id FROM challenge_types WHERE name = 'consistency'),
-    (SELECT metric_id FROM challenge_metrics WHERE name = 'slope_questions_answered' AND gameid = 10),
+    (SELECT metric_id FROM challenge_metrics WHERE name = 'games_played_well'),
     3,  -- Number of games required
     false,
     10

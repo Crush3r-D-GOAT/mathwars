@@ -11,7 +11,6 @@ const SettingsPage = () => {
     navigate('/login');
   };
 
-  // Debug: Log user data on mount and when it changes
   React.useEffect(() => {
     console.log('Current user data in SettingsPage:', user);
     if (user) {
@@ -35,7 +34,6 @@ const SettingsPage = () => {
           <p>No user data available. Please log in.</p>
         )}
         
-        {/* Debug information */}
         {process.env.NODE_ENV === 'development' && user && (
           <div style={{ marginTop: '20px', padding: '10px', background: '#f5f5f5', borderRadius: '4px' }}>
             <h4>Debug Information:</h4>

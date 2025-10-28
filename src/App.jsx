@@ -3,7 +3,6 @@ import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from './context/AuthContext';
 import BottomNav from "./components/BottomNav";
 
-// Import pages
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/Signup';
 import GamePage from './pages/GamePage';
@@ -11,7 +10,6 @@ import DiagnosticPage from './pages/DiagnosticPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import StatsPage from './pages/StatsPage';
-// Games
 import Game2048 from './pages/Game2048';
 import ArithmeticBlaster from './pages/ArithmeticBlaster';
 import FractionMatch from './pages/FractionMatch';
@@ -22,11 +20,10 @@ import AngleRush from './pages/AngleRush';
 import EquationBlitz from './pages/EquationBlitz';
 import FactorFrenzy from './pages/FactorFrenzy';
 import SlopeSprint from './pages/SlopeSprint';
+import ChallengesPage from './pages/ChallengesPage';
 
-// Global CSS
 import './App.css';
 
-// Debug component to check if BottomNav is in the DOM
 const DebugOverlay = () => {
   const [showDebug, setShowDebug] = React.useState(true);
   const location = useLocation();
@@ -70,13 +67,12 @@ const DebugOverlay = () => {
   );
 };
 
-// Custom hook to check if BottomNav should be shown
 const useShowBottomNav = () => {
   const location = useLocation();
   const routesWithNav = ['/game', '/challenges', '/profile', '/stats', '/settings'];
   return routesWithNav.includes(location.pathname);
 };
-// Main App Content Component
+
 const AppContent = () => {
   const location = useLocation();
   const { user } = useAuth();
@@ -100,7 +96,7 @@ const AppContent = () => {
         
         {/* Protected routes */}
         <Route path="/game" element={user ? <GamePage /> : <Navigate to="/login" state={{ from: '/game' }} replace />} />
-        <Route path="/challenges" element={user ? <div className="page">Challenges Page</div> : <Navigate to="/login" state={{ from: '/challenges' }} replace />} />
+        <Route path="/challenges" element={user ? <ChallengesPage /> : <Navigate to="/login" state={{ from: '/challenges' }} replace />} />
         <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" state={{ from: '/profile' }} replace />} />
         <Route path="/stats" element={user ? <StatsPage /> : <Navigate to="/login" state={{ from: '/stats' }} replace />} />
         <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/login" state={{ from: '/settings' }} replace />} />
@@ -126,7 +122,6 @@ const AppContent = () => {
   );
 };
 
-// Main App Component with AuthProvider
 export default function App() {
   return (
     <AuthProvider>

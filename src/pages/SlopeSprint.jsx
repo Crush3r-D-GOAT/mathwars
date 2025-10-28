@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { fetchHighScore, saveGameData } from "../api/client";
 import "../styles/SlopeSprint.css";
@@ -16,8 +16,10 @@ export default function SlopeSprint() {
   const [timeLeft, setTimeLeft] = useState(7);
   const [gameOver, setGameOver] = useState(false);
   const [round, setRound] = useState(0);
+  const [questionsAnswered, setQuestionsAnswered] = useState(0);
+  const hasLoggedMetrics = useRef(false);
   const timerRef = useRef(null);
-  const timeOverRef = useRef(false); // ✅ React Strict Mode safe
+  const timeOverRef = useRef(false);
 
   const simplifyFraction = (numerator, denominator) => {
     const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
@@ -33,17 +35,17 @@ export default function SlopeSprint() {
   const newQuestion = () => {
     let x1, y1, x2, y2, slopeNum, slopeDen;
     
-    // Generate points that will result in a nice fraction for the slope
+    // Generate points for slope calculation
     do {
       x1 = Math.floor(Math.random() * 10) - 5;
       y1 = Math.floor(Math.random() * 10) - 5;
       x2 = Math.floor(Math.random() * 10) - 5;
       y2 = Math.floor(Math.random() * 10) - 5;
       
-      // Avoid vertical line (undefined slope) and horizontal line (0 slope)
+      // Ensure valid slope (not vertical or horizontal)
       if (x1 === x2 || y1 === y2) continue;
       
-      // Calculate slope as a fraction
+      // Calculate slope
       slopeNum = y2 - y1;
       slopeDen = x2 - x1;
       
@@ -150,39 +152,17 @@ useEffect(() => {
   
     saveData();
   }, [gameOver]);
-  
-
-  useEffect(() => {
-    newQuestion();
-  }, []);
-
-  // timer
-  useEffect(() => {
-    if (gameOver) return;
-
-    timeOverRef.current = false;
-    timerRef.current = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1 && !timeOverRef.current) {
-          timeOverRef.current = true;
-          handleChoice(null, true);
-          return 7;
-        }
-        return t - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timerRef.current);
-  }, [points, gameOver]);
 
   const handleChoice = (choice, timeout = false) => {
     if (timeout) {
       setFeedback(" Time's up!");
+      setQuestionsAnswered(prev => prev + 1);
       loseLife();
       return;
     }
 
     setRound((r) => r + 1);
+    setQuestionsAnswered(prev => prev + 1);
 
     if (choice && Math.abs(choice.value - answer.value) < 0.01) {
       setFeedback(" Correct!");
@@ -201,8 +181,23 @@ useEffect(() => {
     }
   };
 
+  const logGameMetrics = () => {
+    if (hasLoggedMetrics.current) return;
+    
+    const metrics = {
+      score: score,
+      streak: streak,
+      isScoreOver1000: score > 1000,
+      isStreakOver10: streak > 10,
+      questionsAnswered: questionsAnswered,
+      isQuestionsAnsweredOver20: questionsAnswered > 20
+    };
+    
+    console.log('SlopeSprint metrics:', metrics);
+    hasLoggedMetrics.current = true;
+  };
+
   const loseLife = () => {
-    setStreak(0);
     setLives((l) => {
       const newLives = l - 1;
       if (newLives <= 0) {
@@ -215,47 +210,67 @@ useEffect(() => {
     });
   };
 
-  /*const saveScore = async (finalScore) => {
-    if (!user) return;
+  useEffect(() => {
+    newQuestion();
+  }, []);
 
-    try {
-      const gameData = {
-        userid: user.userid,
-        gameid: 10, // Game ID for SlopeSprint
-        score: finalScore,
-        highscore: Math.max(finalScore, highScore),
-        dateplayed: new Date().toISOString()
-      };
-
-      await saveGameData(gameData);
-      
-      // Update high score if needed
-      if (finalScore > highScore) {
-        setHighScore(finalScore);
-      }
-    } catch (error) {
-      console.error('Error saving score:', error);
+  // This effect will call logGameMetrics when gameOver changes to true
+  useEffect(() => {
+    if (gameOver) {
+      logGameMetrics();
     }
-  };*/
+  }, [gameOver]);
 
-  const resetGame = () => {
+  useEffect(() => {
+    if (gameOver) return;
+
+    timeOverRef.current = false;
+    timerRef.current = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1 && !timeOverRef.current) {
+          timeOverRef.current = true;
+          handleChoice(null, true);
+          return 7;
+        }
+        return t - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timerRef.current);
+  }, [points, gameOver]);
+
+  const resetGame = async () => {
     // Save score before resetting if game was in progress
-    if (score > 0) {
-      saveScore(score);
+    if (score > 0 && user?.userid) {
+      try {
+        await saveGameData({
+          userid: user.userid,
+          gameid: 10, // 10 is the game ID for SlopeSprint
+          score: score,
+          highscore: score,
+          dateplayed: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error("Error saving game data:", err);
+      }
     }
     
+    // Reset game state
     setScore(0);
-    setLives(3);
     setStreak(0);
-    setRound(0);
+    setLives(3);
     setGameOver(false);
     setTimeLeft(7);
+    setRound(0);
+    setQuestionsAnswered(0);
+    hasLoggedMetrics.current = false;
     newQuestion();
   };
 
   if (gameOver) {
     return (
       <div className="ss-container ss-game-over">
+        <h1> Game Over!</h1>
         <h1>🏁 Game Over!</h1>
         <p className="final-score">Your Score: <span>{score}</span></p>
         <div className="ss-game-over-buttons">

@@ -5,10 +5,11 @@ import "../App.css";
 import "../styles/signup.css";
 import { createUser } from "../api/client";
 
+import MathWarsLogo from "../assets/MathWarsLogin_logo.png";
+
 export default function Signup() {
   const navigate = useNavigate();
 
-  // State for form inputs
   const [fname, setFname] = useState("");
   const [lname, setLname] = useState("");
   const [username, setUsername] = useState("");
@@ -18,11 +19,9 @@ export default function Signup() {
   const [isDiagnostic, setIsDiagnostic] = useState(false);
   const [error, setError] = useState("");
 
-  // Handle sign up button click
   const handleSignup = async (e) => {
     e.preventDefault();
 
-    // Simple frontend validation
     if (passwd !== cpasswd) {
       setError("Passwords do not match!");
       return;
@@ -34,7 +33,6 @@ export default function Signup() {
     }
 
     try {
-      // Data payload for the backend
       const userData = {
         fname,
         lname,
@@ -44,15 +42,12 @@ export default function Signup() {
         isdiagnostic: false,
       };
 
-      // Call the createUser API function from client.js
       await createUser(userData);
 
-      // On successful signup, navigate to the diagnostic page
       console.log("User successfully created!");
       navigate("/game");
 
     } catch (apiError) {
-      // Handle API errors
       setError(apiError.message || "An error occurred during signup.");
       console.error("Signup failed:", apiError);
     }
@@ -61,7 +56,9 @@ export default function Signup() {
   return (
     <div className="signup-container">
       <Card>
-        <div className="signup-image-placeholder">Logo</div>
+        <div className="signup-image-placeholder">
+          <img src={MathWarsLogo} alt="MathWarsLogo" />
+        </div>
         <h1 className="title">Sign Up</h1>
 
         <form onSubmit={handleSignup}>

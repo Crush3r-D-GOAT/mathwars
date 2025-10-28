@@ -14,7 +14,6 @@ const ProfilePage = () => {
   const [userHighScore, setUserHighScore] = useState(0);
   const [userGameCount, setUserGameCount] = useState(0);
 
-  // Fetch data after mount
   useEffect(() => {
     if (!user?.userid) return;
 

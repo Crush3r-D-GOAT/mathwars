@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/FractionMatch.css";
 import { useAuth } from "../context/AuthContext";
-import { fetchHighScore, saveGameData } from "../api/client";
+import { fetchHighScore, saveGameData, updateGameChallenges } from "../api/client";
 
 export default function FractionMatch() {
   const { user } = useAuth();
@@ -10,6 +10,7 @@ export default function FractionMatch() {
   const [gameOver, setGameOver] = useState(false);
   const [lives, setLives] = useState(3);
   const [streak, setStreak] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState({ type: null, message: "" });
   const [userInput, setUserInput] = useState("");
@@ -18,6 +19,8 @@ export default function FractionMatch() {
   const [round, setRound] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
+  const [bouncesCounted, setBouncesCounted] = useState(0);
+  const [questionsAnswered, setQuestionsAnswered] = useState(0);
 
   const speedRef = useRef(0.45);
   const animationRef = useRef(null);
@@ -31,12 +34,11 @@ export default function FractionMatch() {
   useEffect(() => { livesRef.current = lives; }, [lives]);
   useEffect(() => { gameOverRef.current = gameOver; }, [gameOver]);
 
-  // Load high score on mount
   useEffect(() => {
     const loadHighScore = async () => {
       if (user?.userid) {
         try {
-          const savedHighScore = await fetchHighScore(user.userid, 3); // Game ID 3
+          const savedHighScore = await fetchHighScore(user.userid, 3);
           setHighScore(parseInt(savedHighScore) || 0);
         } catch (err) {
           console.error("Failed to load high score", err);
@@ -46,21 +48,24 @@ export default function FractionMatch() {
     loadHighScore();
   }, [user?.userid]);
 
-  // Simplify fraction
   const simplifyFraction = (numerator, denominator) => {
     const gcd = (a, b) => (b ? gcd(b, a % b) : a);
     const divisor = gcd(numerator, denominator);
     return { numerator: numerator / divisor, denominator: denominator / divisor };
   };
 
-  // Generate random fraction
   const generateFraction = () => {
     const denominator = 2 + Math.floor(Math.random() * 12);
     const numerator = 1 + Math.floor(Math.random() * (denominator - 1));
     return { numerator, denominator };
   };
 
-  const getRandomAngle = () => 30 + Math.random() * 120;
+  const getRandomAngle = () => {
+    const angle = Math.random() < 0.5 
+      ? 15 + Math.random() * 30    // 15-45 degrees
+      : 135 + Math.random() * 30;  // 135-165 degrees
+    return angle;
+  };
 
   const startNewRound = (reset = false) => {
     hasHitBottomRef.current = false;
@@ -69,14 +74,17 @@ export default function FractionMatch() {
       setLives(3);
       setScore(0);
       setStreak(0);
+      setMaxStreak(0);
       setGameComplete(false);
       setRound(0);
       speedRef.current = 0.45;
       gameSavedRef.current = false;
+      setBouncesCounted(0);
+      setQuestionsAnswered(0);
     } else {
       setRound((prevRound) => {
         const newRound = prevRound + 1;
-        if (newRound % 10 === 0) speedRef.current *= 1.25;
+        if (newRound % 10 === 0) speedRef.current *= 1.1;
         return newRound;
       });
     }
@@ -106,6 +114,7 @@ export default function FractionMatch() {
         if (newX <= 5 || newX >= 95) {
           vxRef.current *= -1;
           newX = Math.min(Math.max(newX, 5), 95);
+          setBouncesCounted(prev => prev + 1);
         }
 
         if (newY >= 95 && !hasHitBottomRef.current) {
@@ -168,6 +177,9 @@ export default function FractionMatch() {
     if (correct) {
       cancelAnimationFrame(animationRef.current);
       const newStreak = streak + 1;
+      setQuestionsAnswered(prev => prev + 1);
+
+      setMaxStreak(prevMax => Math.max(prevMax, newStreak));
 
       let earned = newStreak;
       const multiplier = Math.pow(2, Math.floor(newStreak / 5));
@@ -192,20 +204,30 @@ export default function FractionMatch() {
   };
 
   const saveGame = async (finalScore) => {
-    if (!user || gameSavedRef.current) return;
+    if (!user?.userid || gameSavedRef.current) return;
 
     try {
       const newHighScore = Math.max(highScore, finalScore);
       const gameData = {
         userid: user.userid,
-        gameid: 3, // Fraction Match
+        gameid: 3,
         score: finalScore,
         highscore: newHighScore,
         dateplayed: new Date().toISOString(),
       };
+      
       await saveGameData(gameData);
+      
+      updateGameChallenges(user.userid, 3, {
+        score: finalScore,
+        streak: maxStreak,
+        scoreOver1000: finalScore > 1000,
+        streakOver10: maxStreak >= 10,
+        gameSpecificCumulative: questionsAnswered,
+        gameConsistency: questionsAnswered >= 10
+      }).catch(console.error);
+      
       gameSavedRef.current = true;
-      console.log("Fraction Match data saved:", gameData);
     } catch (err) {
       console.error("Failed to save Fraction Match game", err);
     }

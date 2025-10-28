@@ -1,0 +1,155 @@
+.challenges-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  color: #333;
+}
+
+.challenges-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.challenges-header h1 {
+  font-size: 2.5rem;
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+}
+
+.challenges-header p {
+  color: #718096;
+  font-size: 1.1rem;
+}
+
+.challenge-section {
+  margin-bottom: 3rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.section-header {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.section-content {
+  padding: 1.5rem;
+}
+
+.challenge-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.challenge-card:last-child {
+  margin-bottom: 0;
+}
+
+.challenge-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.challenge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.challenge-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 0.5rem 0;
+}
+
+.challenge-category {
+  display: inline-block;
+  background: #e9d8fd;
+  color: #6b46c1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.challenge-description {
+  color: #4a5568;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.progress-container {
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.progress-percentage {
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.no-challenges {
+  text-align: center;
+  padding: 2rem;
+  color: #718096;
+  font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .challenges-header h1 {
+    font-size: 2rem;
+  }
+  
+  .challenge-card {
+    padding: 1.25rem 1rem;
+  }
+  
+  .challenge-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .progress-details {
+    font-size: 0.8125rem;
+  }
+}

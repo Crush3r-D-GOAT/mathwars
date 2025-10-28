@@ -4,7 +4,7 @@ import { fetchAllScores, fetchUserGameScores } from "../api/client";
 import LineGraph from "../components/LineGraph";
 
 const gameOptions = [
-  { id: 0, name: "All Games" }, // 👈 default option
+  { id: 0, name: "All Games" },
   { id: 1, name: "2048" },
   { id: 3, name: "Fraction Match" },
   { id: 4, name: "Geometry Area Challenge" },
@@ -18,7 +18,7 @@ const gameOptions = [
 
 const StatsPage = () => {
   const { user } = useAuth();
-  const [selectedGame, setSelectedGame] = useState(0); // 👈 default to All Games
+  const [selectedGame, setSelectedGame] = useState(0);
   const [gameScores, setGameScores] = useState([]);
 
   useEffect(() => {
@@ -28,10 +28,8 @@ const StatsPage = () => {
       try {
         let scores;
         if (selectedGame === 0) {
-          // Fetch all game scores combined
           scores = await fetchAllScores(user.userid);
         } else {
-          // Fetch scores for a specific game
           scores = await fetchUserGameScores(user.userid, selectedGame);
         }
         setGameScores(scores);
@@ -47,7 +45,6 @@ const StatsPage = () => {
     <div className="page" style={{ paddingBottom: "100px" }}>
       <h1>Your Statistics</h1>
 
-      {/* Game Selector */}
       <div style={{ margin: "1rem 0" }}>
         <label style={{ color: "white", marginRight: "10px" }}>
           Select Game:
@@ -71,7 +68,6 @@ const StatsPage = () => {
         </select>
       </div>
 
-      {/* Graph Section */}
       <div
         style={{
           background: "#1e1e1e",

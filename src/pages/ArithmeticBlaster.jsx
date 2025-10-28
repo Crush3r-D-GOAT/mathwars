@@ -1,4 +1,3 @@
-// src/components/ArithmeticBlaster.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import "../styles/ArithmeticBlaster.css";
@@ -25,7 +24,6 @@ export default function ArithmeticBlaster() {
     if (spawnTimeoutRef.current) clearTimeout(spawnTimeoutRef.current);
   }, []);
 
-  // 🔢 Question generator
   const generateQuestion = useCallback(() => {
     clearAllTimers();
     roundActiveRef.current = true;

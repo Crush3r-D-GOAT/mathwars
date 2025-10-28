@@ -17,7 +17,7 @@ export default function AngleRush() {
     };
   const { user } = useAuth();
   const [angle, setAngle] = useState(() => {
-    const first = Math.ceil(Math.random() * 350) + 1; // random angle
+    const first = Math.ceil(Math.random() * 350) + 1;
     return first;
   });
   
@@ -26,6 +26,7 @@ export default function AngleRush() {
   const [feedback, setFeedback] = useState("");
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
   const [lives, setLives] = useState(3);
   const [timeLeft, setTimeLeft] = useState(6);
   const [gameOver, setGameOver] = useState(false);
@@ -35,6 +36,8 @@ export default function AngleRush() {
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const timerRef = useRef(null);
   const timeOverRef = useRef(false);
+  const [questionsAnswered, setQuestionsAnswered] = useState(0);
+  const hasLoggedMetrics = useRef(false);
 
 
 
@@ -47,7 +50,6 @@ export default function AngleRush() {
     timeOverRef.current = false;
   };
 
-  // Load high score on mount
   useEffect(() => {
     const loadHighScore = async () => {
       if (user?.userid) {
@@ -62,7 +64,6 @@ export default function AngleRush() {
     loadHighScore();
   }, [user?.userid]);
 
-  // Timer
   useEffect(() => {
     if (gameOver) return;
     timeOverRef.current = false;
@@ -82,8 +83,10 @@ export default function AngleRush() {
   }, [angle, gameOver]);
 
   const handleChoice = (choice, timeout = false) => {
+    setQuestionsAnswered(prev => prev + 1);
+    
     if (timeout) {
-      setFeedback("⏰ Time’s up!");
+      setFeedback("⏰ Time's up!");
       loseLife();
       return;
     }
@@ -98,7 +101,11 @@ export default function AngleRush() {
         }
         return newScore;
       });
-      setStreak((st) => st + 1);
+      setStreak((st) => {
+        const newStreak = st + 1;
+        setMaxStreak(prevMax => Math.max(prevMax, newStreak));
+        return newStreak;
+      });
       setTimeout(newAngle, 700);
     } else {
       setFeedback(`❌ Incorrect! It was ${type} (${angle}°)`);
@@ -106,8 +113,7 @@ export default function AngleRush() {
     }
   };
 
-// Replace the saveGame call in loseLife with just setGameOver(true)
-const loseLife = () => {
+  const loseLife = () => {
     setStreak(0);
     setShake(true);
   
@@ -115,7 +121,7 @@ const loseLife = () => {
       const newLives = l - 1;
       if (newLives <= 0) {
         clearInterval(timerRef.current);
-        setGameOver(true);  // <-- only set game over here
+        setGameOver(true);  
       } else {
         setTimeout(() => {
           setShake(false);
@@ -135,7 +141,26 @@ const loseLife = () => {
   }, [gameOver, score]);
   
 
+  const logGameMetrics = (finalScore) => {
+    if (hasLoggedMetrics.current) return;
+    
+    const metrics = {
+      score: finalScore,
+      streak: maxStreak,  // Changed from current streak to maxStreak
+      isScoreOver1000: finalScore > 1000,
+      isStreakOver10: maxStreak > 10,  // Changed to use maxStreak
+      questionsAnswered: questionsAnswered,
+      isQuestionsAnsweredOver20: questionsAnswered > 20
+    };
+    console.log('Angle Rush metrics:');
+    console.log(metrics);
+    hasLoggedMetrics.current = true;
+  };
+
   const saveGame = async (finalScore) => {
+    if (gameOver) {
+      logGameMetrics(finalScore);
+    }
 
     try {
       const newHighScore = Math.max(highScore, finalScore);
@@ -158,9 +183,12 @@ const loseLife = () => {
     setScore(0);
     setLives(3);
     setStreak(0);
+    setMaxStreak(0);
     setGameOver(false);
     setShake(false);
+    setQuestionsAnswered(0);
     gameSavedRef.current = false;
+    hasLoggedMetrics.current = false;
     setIsNewHighScore(false);
     newAngle();
   };

@@ -6,7 +6,6 @@ import { fetchHighScore, saveGameData } from "../api/client";
 export default function EquationBlitz() {
   const { user } = useAuth();
 
-  // Strict-mode safe refs
   const timerRef = useRef(null);
   const timeOverRef = useRef(false);
   const gameSavedRef = useRef(false);
@@ -24,8 +23,10 @@ export default function EquationBlitz() {
   const [attempts, setAttempts] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
+  const [questionsAnswered, setQuestionsAnswered] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(0);
+  const hasLoggedMetrics = useRef(false);
 
-  // 🎯 Generate equation
   const generateEquationValue = () => {
     const a = Math.ceil(Math.random() * 9);
     const x = Math.ceil(Math.random() * 12);
@@ -45,19 +46,17 @@ export default function EquationBlitz() {
     timeOverRef.current = false;
   };
 
-  // Initialize first equation immediately
   useEffect(() => {
     const first = generateEquationValue();
     setEquation(first.equation);
     setAnswer(first.answer);
   }, []);
 
-  // Load high score on mount
   useEffect(() => {
     const loadHighScore = async () => {
       if (user?.userid) {
         try {
-          const savedHighScore = await fetchHighScore(user.userid, 8); // 8 = Equation Blitz
+          const savedHighScore = await fetchHighScore(user.userid, 8);
           setHighScore(parseInt(savedHighScore) || 0);
         } catch (err) {
           console.error("Failed to load high score", err);
@@ -67,7 +66,6 @@ export default function EquationBlitz() {
     loadHighScore();
   }, [user?.userid]);
 
-  // Timer
   useEffect(() => {
     if (gameOver) return;
     timeOverRef.current = false;
@@ -87,6 +85,8 @@ export default function EquationBlitz() {
   }, [equation, gameOver]);
 
   const handleSubmit = (timeout = false) => {
+    setQuestionsAnswered(prev => prev + 1);
+    
     setAttempts((a) => {
       const newA = a + 1;
       if (newA % 8 === 0) {
@@ -112,7 +112,11 @@ export default function EquationBlitz() {
         }
         return newScore;
       });
-      setStreak((st) => st + 1);
+      setStreak((st) => {
+        const newStreak = st + 1;
+        setMaxStreak(prevMax => Math.max(prevMax, newStreak));
+        return newStreak;
+      });
       setTimeout(generateEquation, 800);
     } else {
       setFeedback(`❌ Nope — x = ${answer}`);
@@ -137,8 +141,26 @@ export default function EquationBlitz() {
     }
   };
 
+  const logGameMetrics = (finalScore) => {
+    if (hasLoggedMetrics.current) return;
+    
+    const metrics = {
+      score: finalScore,
+      streak: maxStreak,
+      isScoreOver1000: finalScore > 1000,
+      isStreakOver10: maxStreak > 10,
+      questionsAnswered: questionsAnswered,
+      isQuestionsAnsweredOver20: questionsAnswered > 20
+    };
+    console.log('Equation Blitz metrics:');
+    console.log(metrics);
+    hasLoggedMetrics.current = true;
+  };
+
   const saveGame = async (finalScore) => {
     if (!user || gameSavedRef.current) return;
+    
+    logGameMetrics(finalScore);
 
     try {
       const newHighScore = Math.max(highScore, finalScore);
@@ -161,10 +183,13 @@ export default function EquationBlitz() {
     setScore(0);
     setLives(3);
     setStreak(0);
+    setMaxStreak(0);
     setAttempts(0);
     setGameOver(false);
     setIsNewHighScore(false);
+    setQuestionsAnswered(0);
     gameSavedRef.current = false;
+    hasLoggedMetrics.current = false;
     generateEquation();
   };
 

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Card from "../components/Card";
 import "../App.css";
 import "../styles/login.css";
-import placeholder from "../assets/placeholder.png";
+import MathWarsLogo from "../assets/MathWarsLogin_logo.png";
 import { login } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,21 +13,18 @@ export default function LoginPage() {
   const from = location.state?.from?.pathname || "/game";
   const { login: authLogin } = useAuth();
 
-  // Local state for controlled inputs
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
-    // Basic frontend validation
     if (!username || !password) {
       alert("Please enter a username and password.");
       return;
     }
 
     try {
-      // Call the login function from client.js
       const response = await login(username, password);
-      console.log('Login response:', response); // Log the full response
+      console.log('Login response:', response);
 
       console.log('Server response:', response);
       
@@ -35,10 +32,8 @@ export default function LoginPage() {
         throw new Error('No user data in server response');
       }
       
-      // Create user data object with only the fields we want to keep
       const { id, password: _, ...userData } = response.user;
       
-      // Ensure userid is set (use id if userid doesn't exist)
       if (!userData.userid && id) {
         userData.userid = id;
       }
@@ -46,7 +41,6 @@ export default function LoginPage() {
       console.log('Saving user data to context:', userData);
       authLogin(userData);
 
-      // On successful login, navigate to the intended page or game page
       console.log("Login successful:", response);
       navigate(from, { replace: true });
 
@@ -62,7 +56,7 @@ export default function LoginPage() {
       <Card>
         {/* Placeholder for future logo/image */}
         <div className="login-image-placeholder">
-          <img src={placeholder} alt="placeholder" />
+          <img src={MathWarsLogo} alt="MathWarsLogo" />
         </div>
 
         <h1 className="title">Login</h1>

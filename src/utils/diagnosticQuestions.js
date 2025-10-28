@@ -1,9 +1,7 @@
-// src/utils/diagnosticQuestions.js
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
   
-  // ---------- 1. Arithmetic (3 questions, after replacing 2 with fractions) ----------
   function generateArithmeticQuestions() {
     return Array.from({ length: 4 }, () => {
       const a = getRandomInt(10, 99);
@@ -29,7 +27,6 @@ function getRandomInt(min, max) {
     });
   }
   
-  // ---------- 1b. Fraction Equivalence (2 questions) ----------
   function generateFractionQuestions() {
     return Array.from({ length: 2 }, () => {
       const numerator = getRandomInt(1, 9);
@@ -60,7 +57,6 @@ function getRandomInt(min, max) {
     });
   }
   
-  // ---------- 2. Prime Check (2 questions) ----------
   function isPrime(num) {
     if (num < 2) return false;
     for (let i = 2; i * i <= num; i++) if (num % i === 0) return false;
@@ -81,7 +77,6 @@ function getRandomInt(min, max) {
     });
   }
   
-  // ---------- 3. Area (3 questions) ----------
   function generateAreaQuestions() {
     const shapes = ["rectangle", "triangle", "trapezoid"];
   
@@ -153,7 +148,6 @@ function getRandomInt(min, max) {
   }
   
   
-  // ---------- 4. Angle Classification (2 questions) ----------
   function generateAngleQuestions() {
     const types = [
       { label: "acute", range: [1, 89] },
@@ -182,7 +176,6 @@ function getRandomInt(min, max) {
     });
   }
   
-  // ---------- 5. Slope (1 question) ----------
   function gcd(a, b) {
     return b === 0 ? Math.abs(a) : gcd(b, a % b);
   }
@@ -238,7 +231,6 @@ function getRandomInt(min, max) {
   }
   
   
-  // ---------- 6. Linear Equations (2 questions) ----------
   function generateEquationQuestions() {
     return Array.from({ length: 2 }, () => {
       const a = getRandomInt(2, 10);
@@ -265,7 +257,6 @@ function getRandomInt(min, max) {
     });
   }
   
-  // ---------- 7. Factors (3 questions) ----------
   function generateFactorQuestions() {
     const questions = [];
   
@@ -341,7 +332,6 @@ function getRandomInt(min, max) {
   }
   
   
-  // ---------- Combine All ----------
   export function generateDiagnosticQuestions() {
     return [
       ...generateArithmeticQuestions(),
