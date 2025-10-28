@@ -1,7 +1,4 @@
--- drop table usergames;
--- drop table games;
--- drop table users;
--- drop table diagnosticscores;
+
 
 CREATE TABLE IF NOT EXISTS public.users
 (
@@ -77,7 +74,7 @@ ON CONFLICT (gameid) DO NOTHING;
 -- 1. Remove the static difficulty column if it exists
 ALTER TABLE games DROP COLUMN IF EXISTS difficulty;
 
-drop table public.game_metrics;
+drop table if exists public.game_metrics;
 -- 2. Add game_metrics table to track dynamic difficulty
 CREATE TABLE IF NOT EXISTS public.game_metrics (
     gameid INTEGER PRIMARY KEY REFERENCES games(gameid) ON DELETE CASCADE,
@@ -97,7 +94,7 @@ CREATE TABLE IF NOT EXISTS public.game_metrics (
     ) STORED
 );
 
-drop function update_game_metrics();
+drop function if exists update_game_metrics();
 -- 3. Create a function to update game metrics
 CREATE OR REPLACE FUNCTION public.update_game_metrics()
 RETURNS TRIGGER AS $$
@@ -130,7 +127,7 @@ AFTER INSERT OR UPDATE ON usergames
 FOR EACH ROW
 EXECUTE FUNCTION update_game_metrics();
 
-drop view game_difficulty;
+drop view if exists game_difficulty;
 -- 5. Create a view for easy difficulty access (UPDATED)
 CREATE OR REPLACE VIEW game_difficulty AS
 WITH latest_metrics AS (
@@ -324,7 +321,8 @@ ON CONFLICT (name) DO UPDATE SET
 INSERT INTO challenge_metrics (name, description, is_game_specific, gameid)
 VALUES 
     ('score', 'Score across all games', false, NULL),
-    ('streak', 'Current daily activity streak', false, NULL)
+    ('streak', 'Current daily activity streak', false, NULL),
+	('games_played_well', 'Metric for all consistency challenge', false, NULL)
 ON CONFLICT (name, gameid) DO UPDATE SET
     description = EXCLUDED.description,
     is_game_specific = EXCLUDED.is_game_specific;
@@ -333,8 +331,7 @@ ON CONFLICT (name, gameid) DO UPDATE SET
 -- 2048 (gameid = 1)
 INSERT INTO challenge_metrics (name, description, is_game_specific, gameid)
 VALUES 
-    ('moves_made', 'Total moves made in 2048', true, 1),
-    ('tile_reached', 'Highest tile reached in 2048', true, 1)
+    ('moves_made', 'Total moves made in 2048', true, 1)
 ON CONFLICT (name, gameid) DO UPDATE SET
     description = EXCLUDED.description,
     is_game_specific = EXCLUDED.is_game_specific;
@@ -358,8 +355,7 @@ ON CONFLICT (name, gameid) DO UPDATE SET
 -- Pi Memory Game (gameid = 5)
 INSERT INTO challenge_metrics (name, description, is_game_specific, gameid)
 VALUES 
-    ('digits_entered', 'Total digits of Pi entered', true, 5),
-    ('level_reached', 'Highest level reached in Pi Memory', true, 5)
+    ('digits_entered', 'Total digits of Pi entered', true, 5)
 ON CONFLICT (name, gameid) DO UPDATE SET
     description = EXCLUDED.description,
     is_game_specific = EXCLUDED.is_game_specific;
@@ -539,7 +535,7 @@ SELECT
     'Angle Ace', 
     'Answer {target} angle questions in Angle Rush', 
     (SELECT type_id FROM challenge_types WHERE name = 'cumulative'),
-    (SELECT metric_id FROM challenge_metrics WHERE name = 'questions_answered' AND gameid = 7),
+    (SELECT metric_id FROM challenge_metrics WHERE name = 'angle_questions_answered' AND gameid = 7),
     100,
     false,
     7
@@ -591,7 +587,7 @@ SELECT
     '2048 Champion', 
     'Reach the 256 tile in {target} different 2048 games', 
     (SELECT type_id FROM challenge_types WHERE name = 'consistency'),
-    (SELECT metric_id FROM challenge_metrics WHERE name = 'games_played_well'),
+    4,
     3,  -- Number of games required
     false,
     1
