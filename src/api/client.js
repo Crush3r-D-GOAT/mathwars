@@ -304,14 +304,3 @@ export async function updateGameChallenges(userId, gameId, gameData) {
     return { success: false, error: error.message };
   }
 }
-
-export async function getRecommendations(userId) {
-  try {
-    const response = await fetch(`http://localhost:3002/api/recommendations/${userId}`);
-    if (!response.ok) throw new Error("Failed to fetch recommendations");
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching recommendations:", error);
-    return [];
-  }
-}
