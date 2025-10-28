@@ -5,7 +5,7 @@ import "../App.css";
 import "../styles/signup.css";
 import { createUser } from "../api/client";
 
-import MathWarsLogo from "../assets/MathWarsLogin_logo.png";
+import MathWarsLogo from "../assets/MathWarsLogin_logo.webp";
 
 export default function Signup() {
   const navigate = useNavigate();

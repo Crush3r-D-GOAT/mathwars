@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Card from "../components/Card";
 import "../App.css";
 import "../styles/login.css";
-import MathWarsLogo from "../assets/MathWarsLogin_logo.png";
+import MathWarsLogo from "../assets/MathWarsLogin_logo.webp";
 import { login } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
