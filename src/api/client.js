@@ -1,12 +1,11 @@
 import axios from 'axios';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3002'
+
 const apiClient = axios.create({
-  baseURL: 'http://localhost:3002',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true
-});
+  baseURL: API_BASE,
+  headers: { 'Content-Type': 'application/json' }
+})
 
 apiClient.interceptors.request.use(
   (config) => {
@@ -206,7 +205,7 @@ export const fetchUserGameCount = async (userId) => {
  */
 export async function fetchAllScores(userId) {
   try {
-    const response = await fetch(`http://localhost:3002/api/usergames/${userId}/scores`);
+    const response = await fetch(`${API_BASE}/api/usergames/${userId}/scores`, { credentials: 'omit' });
     if (!response.ok) throw new Error("Failed to fetch scores");
     const data = await response.json();
     return data.scores; 
@@ -224,7 +223,7 @@ export async function fetchAllScores(userId) {
  */
 export async function fetchUserGameScores(userId, gameId) {
   try {
-    const response = await fetch(`http://localhost:3002/api/usergames/${userId}/${gameId}/scores`);
+    const response = await fetch(`${API_BASE}/api/usergames/${userId}/${gameId}/scores`, { credentials: 'omit' });
     if (!response.ok) throw new Error("Failed to fetch scores");
     return await response.json();
   } catch (error) {
@@ -240,12 +239,7 @@ export async function fetchUserGameScores(userId, gameId) {
  */
 export async function fetchUserChallenges(userId) {
   try {
-    const response = await fetch(`http://localhost:3002/api/users/${userId}/challenges`, {
-      credentials: 'include', 
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await fetch(`${API_BASE}/api/users/${userId}/challenges`, { headers: { 'Content-Type': 'application/json' }, credentials: 'omit' });
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -267,7 +261,7 @@ export async function fetchUserChallenges(userId) {
  */
 export async function getRecommendations(userId) {
   try {
-    const response = await fetch(`http://localhost:3002/api/recommendations/${userId}`);
+    const response = await fetch(`${API_BASE}/api/recommendations/${userId}`, { credentials: 'omit' });
     if (!response.ok) throw new Error("Failed to fetch recommendations");
     return await response.json();
   } catch (error) {
